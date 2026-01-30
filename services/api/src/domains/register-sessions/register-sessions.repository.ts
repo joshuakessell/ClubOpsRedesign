@@ -1,60 +1,111 @@
 import { Injectable } from '@nestjs/common';
-import type { Kysely } from 'kysely';
+import type { Insertable, Kysely } from 'kysely';
 import type { Database } from '../../platform/database/database.types';
 import type { RegisterNumber } from './dto/register-session.dto';
 
 @Injectable()
 export class RegisterSessionsRepository {
-  async createActiveSession(db: Kysely<Database>) {
-    void db;
-    throw new Error('Not implemented');
+  async createActiveSession(db: Kysely<Database>, values: Insertable<Database['register_sessions']>) {
+    return db
+      .insertInto('register_sessions')
+      .values(values)
+      .returningAll()
+      .executeTakeFirstOrThrow();
   }
 
   async updateHeartbeat(db: Kysely<Database>, sessionId: string) {
-    void db;
-    void sessionId;
-    throw new Error('Not implemented');
+    return db
+      .updateTable('register_sessions')
+      .set({ last_heartbeat_at: new Date() })
+      .where('id', '=', sessionId)
+      .where('signed_out_at', 'is', null)
+      .returningAll()
+      .executeTakeFirst();
   }
 
-  async closeSession(db: Kysely<Database>, sessionId: string, endedByStaffId?: string) {
-    void db;
-    void sessionId;
-    void endedByStaffId;
-    throw new Error('Not implemented');
+  async closeSession(
+    db: Kysely<Database>,
+    sessionId: string,
+    reason: string,
+    endedByStaffId?: string | null
+  ) {
+    return db
+      .updateTable('register_sessions')
+      .set({
+        signed_out_at: new Date(),
+        signed_out_reason: reason,
+        signed_out_by_staff_id: endedByStaffId ?? null,
+      })
+      .where('id', '=', sessionId)
+      .where('signed_out_at', 'is', null)
+      .returningAll()
+      .executeTakeFirst();
   }
 
   async forceCloseByDevice(db: Kysely<Database>, deviceId: string) {
-    void db;
-    void deviceId;
-    throw new Error('Not implemented');
+    return db
+      .updateTable('register_sessions')
+      .set({
+        signed_out_at: new Date(),
+        signed_out_reason: 'FORCED_SIGN_OUT',
+      })
+      .where('device_id', '=', deviceId)
+      .where('signed_out_at', 'is', null)
+      .returningAll()
+      .execute();
   }
 
   async findActiveByRegisterNumber(db: Kysely<Database>, registerNumber: RegisterNumber) {
-    void db;
-    void registerNumber;
-    throw new Error('Not implemented');
+    return db
+      .selectFrom('register_sessions')
+      .selectAll()
+      .where('register_number', '=', registerNumber)
+      .where('signed_out_at', 'is', null)
+      .executeTakeFirst();
   }
 
   async findActiveByDeviceId(db: Kysely<Database>, deviceId: string) {
-    void db;
-    void deviceId;
-    throw new Error('Not implemented');
+    return db
+      .selectFrom('register_sessions')
+      .selectAll()
+      .where('device_id', '=', deviceId)
+      .where('signed_out_at', 'is', null)
+      .executeTakeFirst();
   }
 
   async listActiveByRegisters(db: Kysely<Database>, registerNumbers: RegisterNumber[]) {
-    void db;
-    void registerNumbers;
-    throw new Error('Not implemented');
+    return db
+      .selectFrom('register_sessions')
+      .selectAll()
+      .where('register_number', 'in', registerNumbers)
+      .where('signed_out_at', 'is', null)
+      .execute();
   }
 
-  async listExpiredForTtl(db: Kysely<Database>) {
-    void db;
-    throw new Error('Not implemented');
+  async listExpiredForTtl(db: Kysely<Database>, cutoff: Date, limit: number) {
+    return db
+      .selectFrom('register_sessions')
+      .select(['id'])
+      .where('signed_out_at', 'is', null)
+      .where('last_heartbeat_at', '<', cutoff)
+      .orderBy('last_heartbeat_at', 'asc')
+      .limit(limit)
+      .forUpdate()
+      .skipLocked()
+      .execute();
   }
 
   async closeExpiredSessions(db: Kysely<Database>, sessionIds: string[]) {
-    void db;
-    void sessionIds;
-    throw new Error('Not implemented');
+    if (sessionIds.length === 0) return [];
+    return db
+      .updateTable('register_sessions')
+      .set({
+        signed_out_at: new Date(),
+        signed_out_reason: 'TTL_EXPIRED',
+      })
+      .where('id', 'in', sessionIds)
+      .where('signed_out_at', 'is', null)
+      .returningAll()
+      .execute();
   }
 }

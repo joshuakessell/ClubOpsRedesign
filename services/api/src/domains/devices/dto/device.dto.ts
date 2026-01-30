@@ -5,7 +5,7 @@ export type DeviceDto = {
   name: string;
   kind: DeviceKind;
   enabled: boolean;
-  lastSeenAt: string;
+  lastSeenAt: string | null;
 };
 
 export type CreateDeviceRequestDto = {

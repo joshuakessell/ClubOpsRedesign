@@ -10,6 +10,7 @@ import { AuthStaffModule } from './domains/auth-staff/auth-staff.module';
 import { DevicesModule } from './domains/devices/devices.module';
 import { RegisterSessionsModule } from './domains/register-sessions/register-sessions.module';
 import { AuditModule } from './domains/audit/audit.module';
+import { AdminModule } from './application/admin/admin.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { AuditModule } from './domains/audit/audit.module';
     DevicesModule,
     RegisterSessionsModule,
     AuditModule,
+    AdminModule,
   ],
 })
 export class AppModule {}

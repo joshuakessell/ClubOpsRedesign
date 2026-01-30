@@ -10,8 +10,10 @@ export class RegisterSessionTtlJob {
   ) {}
 
   async runOnce(): Promise<void> {
-    void this.configService;
-    void this.registerSessionsService;
-    throw new Error('Not implemented');
+    await this.registerSessionsService.closeExpiredSessions();
+  }
+
+  getIntervalSeconds(): number {
+    return this.configService.getRegisterSessionCleanupIntervalSeconds();
   }
 }

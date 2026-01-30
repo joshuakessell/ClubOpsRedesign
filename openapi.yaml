@@ -15,6 +15,7 @@ info:
     Heartbeat/TTL configuration (server-side):
     - REGISTER_SESSION_TTL_SECONDS (default: 900 seconds / 15 minutes)
     - REGISTER_SESSION_CLEANUP_INTERVAL_SECONDS (default: 30 seconds)
+    - STAFF_SESSION_TTL_SECONDS (default: 43200 seconds / 12 hours)
 servers:
   - url: /v1
 
@@ -375,34 +376,6 @@ paths:
         '403':
           $ref: '#/components/responses/ErrorResponse'
 
-  /register-sessions/status:
-    get:
-      tags: [registers]
-      summary: Get active register session for a device
-      description: Optional endpoint for employee-register parity.
-      security:
-        - DeviceIdHeader: []
-          DeviceTokenHeader: []
-          StaffBearerAuth: []
-      parameters:
-        - name: deviceId
-          in: query
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '200':
-          description: Device session status
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RegisterSessionStatusResponse'
-        '401':
-          $ref: '#/components/responses/ErrorResponse'
-        '403':
-          $ref: '#/components/responses/ErrorResponse'
-
   /admin/register-sessions:
     get:
       tags: [admin]
@@ -493,6 +466,18 @@ components:
           type: string
         code:
           type: string
+          enum:
+            - DEVICE_UNAUTHORIZED
+            - DEVICE_DISABLED
+            - STAFF_UNAUTHORIZED
+            - STAFF_SESSION_EXPIRED
+            - STAFF_DISABLED
+            - FORBIDDEN
+            - VALIDATION_ERROR
+            - REGISTER_SESSION_NOT_FOUND
+            - REGISTER_SESSION_NOT_ACTIVE
+            - REGISTER_ACTIVE_CONFLICT
+            - DEVICE_ACTIVE_CONFLICT
 
     HealthResponse:
       type: object
@@ -529,6 +514,7 @@ components:
         lastSeenAt:
           type: string
           format: date-time
+          nullable: true
 
     DeviceListResponse:
       type: object
@@ -681,17 +667,6 @@ components:
       type: object
       required: [session]
       properties:
-        session:
-          $ref: '#/components/schemas/RegisterSessionDTO'
-          nullable: true
-
-    RegisterSessionStatusResponse:
-      type: object
-      required: [deviceId, session]
-      properties:
-        deviceId:
-          type: string
-          format: uuid
         session:
           $ref: '#/components/schemas/RegisterSessionDTO'
           nullable: true

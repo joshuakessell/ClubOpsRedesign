@@ -5,19 +5,23 @@ import type { Database } from '../../platform/database/database.types';
 @Injectable()
 export class StaffRepository {
   async listEnabledStaff(db: Kysely<Database>) {
-    void db;
-    throw new Error('Not implemented');
+    return db
+      .selectFrom('staff')
+      .select(['id', 'identifier', 'name', 'role'])
+      .where('enabled', '=', true)
+      .orderBy('name', 'asc')
+      .execute();
   }
 
   async findByIdentifier(db: Kysely<Database>, identifier: string) {
-    void db;
-    void identifier;
-    throw new Error('Not implemented');
+    return db
+      .selectFrom('staff')
+      .selectAll()
+      .where('identifier', '=', identifier)
+      .executeTakeFirst();
   }
 
   async findById(db: Kysely<Database>, staffId: string) {
-    void db;
-    void staffId;
-    throw new Error('Not implemented');
+    return db.selectFrom('staff').selectAll().where('id', '=', staffId).executeTakeFirst();
   }
 }

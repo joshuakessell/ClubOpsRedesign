@@ -12,6 +12,6 @@ export class DatabaseService {
   }
 
   async transaction<T>(fn: (trx: Transaction<Database>) => Promise<T>): Promise<T> {
-    throw new Error('Not implemented');
+    return this.db.transaction().execute((trx) => fn(trx));
   }
 }

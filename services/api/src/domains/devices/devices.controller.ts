@@ -1,15 +1,24 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, Req, UseGuards } from '@nestjs/common';
 import { DeviceAuthGuard } from '../../platform/auth-device/device-auth.guard';
-import { DevicesReadService } from './devices.read.service';
 import type { DeviceDto } from './dto/device.dto';
+import type { Request } from 'express';
+import type { RequestContext } from '../../platform/http/request-context';
+import { throwUnauthorized } from '../../platform/http/errors';
 
 @Controller('v1/devices')
 export class DevicesController {
-  constructor(private readonly devicesReadService: DevicesReadService) {}
-
   @Get('me')
   @UseGuards(DeviceAuthGuard)
-  async me(): Promise<DeviceDto> {
-    return this.devicesReadService.getSelf();
+  async me(@Req() req: Request & RequestContext): Promise<DeviceDto> {
+    if (!req.device) {
+      throwUnauthorized('Device context missing', 'DEVICE_UNAUTHORIZED');
+    }
+    return {
+      id: req.device.id,
+      name: req.device.name,
+      kind: req.device.kind,
+      enabled: req.device.enabled,
+      lastSeenAt: req.device.lastSeenAt ?? null,
+    };
   }
 }

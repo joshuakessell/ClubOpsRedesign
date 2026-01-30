@@ -15,11 +15,6 @@ export class RegisterSessionsReadService {
     return this.registerSessionsRepository.findActiveByRegisterNumber(db, registerNumber);
   }
 
-  async getActiveByDeviceId(deviceId: string) {
-    const db = this.databaseService.client;
-    return this.registerSessionsRepository.findActiveByDeviceId(db, deviceId);
-  }
-
   async listActiveByRegisters(registerNumbers: RegisterNumber[]) {
     const db = this.databaseService.client;
     return this.registerSessionsRepository.listActiveByRegisters(db, registerNumbers);

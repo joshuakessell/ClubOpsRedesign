@@ -1,0 +1,47 @@
+import { HttpException, HttpStatus } from '@nestjs/common';
+
+export type ErrorCode =
+  | 'DEVICE_UNAUTHORIZED'
+  | 'DEVICE_DISABLED'
+  | 'STAFF_UNAUTHORIZED'
+  | 'STAFF_SESSION_EXPIRED'
+  | 'STAFF_DISABLED'
+  | 'FORBIDDEN'
+  | 'VALIDATION_ERROR'
+  | 'REGISTER_SESSION_NOT_FOUND'
+  | 'REGISTER_SESSION_NOT_ACTIVE'
+  | 'REGISTER_ACTIVE_CONFLICT'
+  | 'DEVICE_ACTIVE_CONFLICT';
+
+export function errorResponse(error: string, message: string, code?: ErrorCode) {
+  return { error, message, code };
+}
+
+export function throwHttpError(
+  status: number,
+  error: string,
+  message: string,
+  code?: ErrorCode
+): never {
+  throw new HttpException(errorResponse(error, message, code), status);
+}
+
+export function throwUnauthorized(message: string, code: ErrorCode) {
+  throwHttpError(HttpStatus.UNAUTHORIZED, 'Unauthorized', message, code);
+}
+
+export function throwForbidden(message: string, code: ErrorCode) {
+  throwHttpError(HttpStatus.FORBIDDEN, 'Forbidden', message, code);
+}
+
+export function throwValidation(message: string) {
+  throwHttpError(HttpStatus.BAD_REQUEST, 'Bad Request', message, 'VALIDATION_ERROR');
+}
+
+export function throwNotFound(message: string, code: ErrorCode) {
+  throwHttpError(HttpStatus.NOT_FOUND, 'Not Found', message, code);
+}
+
+export function throwConflict(message: string, code: ErrorCode) {
+  throwHttpError(HttpStatus.CONFLICT, 'Conflict', message, code);
+}

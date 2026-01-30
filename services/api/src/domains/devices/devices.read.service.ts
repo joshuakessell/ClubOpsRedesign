@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../../platform/database/database.service';
 import { DevicesRepository } from './devices.repository';
+import type { DeviceDto } from './dto/device.dto';
 
 @Injectable()
 export class DevicesReadService {
@@ -21,10 +22,28 @@ export class DevicesReadService {
 
   async listAll() {
     const db = this.databaseService.client;
+    const devices = await this.devicesRepository.listAll(db);
+    return devices.map((device) => this.toDto(device));
+  }
+
+  async listAllRaw() {
+    const db = this.databaseService.client;
     return this.devicesRepository.listAll(db);
   }
 
-  async getSelf() {
-    throw new Error('Not implemented');
+  private toDto(device: {
+    id: string;
+    name: string;
+    kind: 'register' | 'kiosk' | 'office';
+    enabled: boolean;
+    last_seen_at: Date | null;
+  }): DeviceDto {
+    return {
+      id: device.id,
+      name: device.name,
+      kind: device.kind,
+      enabled: device.enabled,
+      lastSeenAt: device.last_seen_at ? device.last_seen_at.toISOString() : null,
+    };
   }
 }

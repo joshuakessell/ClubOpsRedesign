@@ -12,4 +12,16 @@ export class ConfigService {
     const parsed = Number(raw);
     return Number.isFinite(parsed) ? parsed : fallback;
   }
+
+  getRegisterSessionTtlSeconds(): number {
+    return this.getNumber('REGISTER_SESSION_TTL_SECONDS', 900);
+  }
+
+  getRegisterSessionCleanupIntervalSeconds(): number {
+    return this.getNumber('REGISTER_SESSION_CLEANUP_INTERVAL_SECONDS', 30);
+  }
+
+  getStaffSessionTtlSeconds(): number {
+    return this.getNumber('STAFF_SESSION_TTL_SECONDS', 43200);
+  }
 }
