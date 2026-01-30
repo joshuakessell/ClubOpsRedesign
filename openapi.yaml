@@ -1,0 +1,769 @@
+openapi: 3.0.3
+info:
+  title: ClubOps Phase 1 API
+  version: 0.1.0
+  description: |
+    Phase 1 scope: staff PIN auth, device allowlist, register sessions (lifecycle + heartbeat + TTL), admin force sign-out, audit writes.
+
+    Device authentication is required via headers for all non-health endpoints:
+    - x-device-id
+    - x-device-token
+
+    Staff/admin authentication uses an opaque server session token in:
+    - Authorization: Bearer <sessionToken>
+
+    Heartbeat/TTL configuration (server-side):
+    - REGISTER_SESSION_TTL_SECONDS (default: 900 seconds / 15 minutes)
+    - REGISTER_SESSION_CLEANUP_INTERVAL_SECONDS (default: 30 seconds)
+servers:
+  - url: /v1
+
+tags:
+  - name: health
+  - name: auth
+  - name: devices
+  - name: registers
+  - name: admin
+
+paths:
+  /health:
+    get:
+      tags: [health]
+      summary: Health check
+      security: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        '500':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /auth/staff:
+    get:
+      tags: [auth]
+      summary: List staff for login selection UI
+      description: Device-authenticated only.
+      security:
+        - DeviceIdHeader: []
+          DeviceTokenHeader: []
+      responses:
+        '200':
+          description: Staff list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffListResponse'
+        '401':
+          $ref: '#/components/responses/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /auth/login-pin:
+    post:
+      tags: [auth]
+      summary: Staff PIN sign-in
+      description: Device-authenticated only. Returns a staff session token.
+      security:
+        - DeviceIdHeader: []
+          DeviceTokenHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StaffLoginRequest'
+      responses:
+        '200':
+          description: Staff session created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffLoginResponse'
+        '401':
+          $ref: '#/components/responses/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /auth/logout:
+    post:
+      tags: [auth]
+      summary: Staff sign-out
+      security:
+        - DeviceIdHeader: []
+          DeviceTokenHeader: []
+          StaffBearerAuth: []
+      responses:
+        '204':
+          description: Logged out
+        '401':
+          $ref: '#/components/responses/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /auth/me:
+    get:
+      tags: [auth]
+      summary: Get current staff session
+      security:
+        - DeviceIdHeader: []
+          DeviceTokenHeader: []
+          StaffBearerAuth: []
+      responses:
+        '200':
+          description: Current staff session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffSessionDTO'
+        '401':
+          $ref: '#/components/responses/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /devices/me:
+    get:
+      tags: [devices]
+      summary: Validate device headers and return device metadata
+      security:
+        - DeviceIdHeader: []
+          DeviceTokenHeader: []
+      responses:
+        '200':
+          description: Device
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceDTO'
+        '401':
+          $ref: '#/components/responses/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /admin/devices:
+    get:
+      tags: [admin]
+      summary: List devices
+      description: Admin only.
+      security:
+        - DeviceIdHeader: []
+          DeviceTokenHeader: []
+          StaffBearerAuth: []
+      responses:
+        '200':
+          description: Devices list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceListResponse'
+        '401':
+          $ref: '#/components/responses/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/ErrorResponse'
+
+    post:
+      tags: [admin]
+      summary: Create device and provision token
+      description: Admin only. Returns the raw provisioned device token once.
+      security:
+        - DeviceIdHeader: []
+          DeviceTokenHeader: []
+          StaffBearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDeviceRequest'
+      responses:
+        '201':
+          description: Device created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProvisionDeviceResponse'
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /admin/devices/{deviceId}:
+    patch:
+      tags: [admin]
+      summary: Update device (enable/disable/rename/kind)
+      description: Admin only. Disabling a device force-closes any active register session for that device.
+      security:
+        - DeviceIdHeader: []
+          DeviceTokenHeader: []
+          StaffBearerAuth: []
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateDeviceRequest'
+      responses:
+        '200':
+          description: Updated device
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceDTO'
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/ErrorResponse'
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /registers/availability:
+    get:
+      tags: [registers]
+      summary: Register availability for register numbers 1..3
+      security:
+        - DeviceIdHeader: []
+          DeviceTokenHeader: []
+          StaffBearerAuth: []
+      responses:
+        '200':
+          description: Register availability
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterAvailabilityResponse'
+        '401':
+          $ref: '#/components/responses/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /register-sessions/open:
+    post:
+      tags: [registers]
+      summary: Open a register session
+      description: Uses a uniqueness constraint to prevent multiple active sessions per register.
+      security:
+        - DeviceIdHeader: []
+          DeviceTokenHeader: []
+          StaffBearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OpenRegisterSessionRequest'
+      responses:
+        '201':
+          description: Register session created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterSessionDTO'
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/ErrorResponse'
+        '409':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /register-sessions/{id}/heartbeat:
+    post:
+      tags: [registers]
+      summary: Heartbeat for an active register session
+      description: Client target is every 30s; server TTL is configurable.
+      security:
+        - DeviceIdHeader: []
+          DeviceTokenHeader: []
+          StaffBearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Register session updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterSessionDTO'
+        '401':
+          $ref: '#/components/responses/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/ErrorResponse'
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+        '409':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /register-sessions/{id}/close:
+    post:
+      tags: [registers]
+      summary: Close a register session
+      security:
+        - DeviceIdHeader: []
+          DeviceTokenHeader: []
+          StaffBearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CloseRegisterSessionRequest'
+      responses:
+        '200':
+          description: Register session closed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterSessionDTO'
+        '401':
+          $ref: '#/components/responses/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/ErrorResponse'
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+        '409':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /register-sessions/active:
+    get:
+      tags: [registers]
+      summary: Get active register session for a register number
+      security:
+        - DeviceIdHeader: []
+          DeviceTokenHeader: []
+          StaffBearerAuth: []
+      parameters:
+        - name: registerNumber
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/RegisterNumber'
+      responses:
+        '200':
+          description: Active register session or null
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterSessionNullableResponse'
+        '401':
+          $ref: '#/components/responses/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /register-sessions/status:
+    get:
+      tags: [registers]
+      summary: Get active register session for a device
+      description: Optional endpoint for employee-register parity.
+      security:
+        - DeviceIdHeader: []
+          DeviceTokenHeader: []
+          StaffBearerAuth: []
+      parameters:
+        - name: deviceId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Device session status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterSessionStatusResponse'
+        '401':
+          $ref: '#/components/responses/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /admin/register-sessions:
+    get:
+      tags: [admin]
+      summary: List active register sessions (registers 1..3)
+      description: Admin only. Always returns entries for registers 1..3.
+      security:
+        - DeviceIdHeader: []
+          DeviceTokenHeader: []
+          StaffBearerAuth: []
+      responses:
+        '200':
+          description: Register session slots
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminRegisterSessionsResponse'
+        '401':
+          $ref: '#/components/responses/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /admin/register-sessions/{registerNumber}/force-signout:
+    post:
+      tags: [admin]
+      summary: Force sign-out of a register session
+      description: Admin only. Idempotent if already signed out.
+      security:
+        - DeviceIdHeader: []
+          DeviceTokenHeader: []
+          StaffBearerAuth: []
+      parameters:
+        - name: registerNumber
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/RegisterNumber'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForceSignOutRequest'
+      responses:
+        '200':
+          description: Register session updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterSessionDTO'
+        '401':
+          $ref: '#/components/responses/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/ErrorResponse'
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+
+components:
+  securitySchemes:
+    DeviceIdHeader:
+      type: apiKey
+      in: header
+      name: x-device-id
+    DeviceTokenHeader:
+      type: apiKey
+      in: header
+      name: x-device-token
+    StaffBearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: opaque
+
+  responses:
+    ErrorResponse:
+      description: Error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  schemas:
+    ErrorResponse:
+      type: object
+      required: [error, message]
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        code:
+          type: string
+
+    HealthResponse:
+      type: object
+      required: [status, time]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        time:
+          type: string
+          format: date-time
+
+    RegisterNumber:
+      type: integer
+      enum: [1, 2, 3]
+
+    DeviceKind:
+      type: string
+      enum: [register, kiosk, office]
+
+    DeviceDTO:
+      type: object
+      required: [id, name, kind, enabled, lastSeenAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        kind:
+          $ref: '#/components/schemas/DeviceKind'
+        enabled:
+          type: boolean
+        lastSeenAt:
+          type: string
+          format: date-time
+
+    DeviceListResponse:
+      type: object
+      required: [devices]
+      properties:
+        devices:
+          type: array
+          items:
+            $ref: '#/components/schemas/DeviceDTO'
+
+    CreateDeviceRequest:
+      type: object
+      required: [name, kind]
+      properties:
+        name:
+          type: string
+        kind:
+          $ref: '#/components/schemas/DeviceKind'
+        enabled:
+          type: boolean
+          default: true
+
+    ProvisionDeviceResponse:
+      type: object
+      required: [device, deviceToken]
+      properties:
+        device:
+          $ref: '#/components/schemas/DeviceDTO'
+        deviceToken:
+          type: string
+          description: Raw device token (returned only at issuance).
+
+    UpdateDeviceRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        kind:
+          $ref: '#/components/schemas/DeviceKind'
+        enabled:
+          type: boolean
+
+    StaffRole:
+      type: string
+      enum: [staff, admin]
+
+    StaffListItem:
+      type: object
+      required: [id, identifier, name, role]
+      properties:
+        id:
+          type: string
+          format: uuid
+        identifier:
+          type: string
+        name:
+          type: string
+        role:
+          $ref: '#/components/schemas/StaffRole'
+
+    StaffListResponse:
+      type: object
+      required: [staff]
+      properties:
+        staff:
+          type: array
+          items:
+            $ref: '#/components/schemas/StaffListItem'
+
+    StaffLoginRequest:
+      type: object
+      required: [identifier, pin]
+      properties:
+        identifier:
+          type: string
+        pin:
+          type: string
+          format: password
+
+    StaffSessionDTO:
+      type: object
+      required: [staffId, role, deviceId, createdAt, expiresAt]
+      properties:
+        staffId:
+          type: string
+          format: uuid
+        role:
+          $ref: '#/components/schemas/StaffRole'
+        deviceId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+
+    StaffLoginResponse:
+      type: object
+      required: [session, sessionToken]
+      properties:
+        session:
+          $ref: '#/components/schemas/StaffSessionDTO'
+        sessionToken:
+          type: string
+          description: Opaque session token (returned only at issuance).
+
+    RegisterSessionDTO:
+      type: object
+      required:
+        - id
+        - registerNumber
+        - staffId
+        - deviceId
+        - status
+        - startedAt
+        - lastHeartbeatAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        registerNumber:
+          $ref: '#/components/schemas/RegisterNumber'
+        staffId:
+          type: string
+          format: uuid
+        deviceId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [ACTIVE, ENDED]
+        startedAt:
+          type: string
+          format: date-time
+        lastHeartbeatAt:
+          type: string
+          format: date-time
+        endedAt:
+          type: string
+          format: date-time
+          nullable: true
+        endedReason:
+          type: string
+          enum: [STAFF_CLOSED, FORCED_SIGN_OUT, TTL_EXPIRED]
+          nullable: true
+
+    RegisterSessionNullableResponse:
+      type: object
+      required: [session]
+      properties:
+        session:
+          $ref: '#/components/schemas/RegisterSessionDTO'
+          nullable: true
+
+    RegisterSessionStatusResponse:
+      type: object
+      required: [deviceId, session]
+      properties:
+        deviceId:
+          type: string
+          format: uuid
+        session:
+          $ref: '#/components/schemas/RegisterSessionDTO'
+          nullable: true
+
+    RegisterAvailabilityItem:
+      type: object
+      required: [registerNumber, available]
+      properties:
+        registerNumber:
+          $ref: '#/components/schemas/RegisterNumber'
+        available:
+          type: boolean
+        activeSessionId:
+          type: string
+          format: uuid
+          nullable: true
+
+    RegisterAvailabilityResponse:
+      type: object
+      required: [registers]
+      properties:
+        registers:
+          type: array
+          items:
+            $ref: '#/components/schemas/RegisterAvailabilityItem'
+
+    OpenRegisterSessionRequest:
+      type: object
+      required: [registerNumber]
+      properties:
+        registerNumber:
+          $ref: '#/components/schemas/RegisterNumber'
+
+    CloseRegisterSessionRequest:
+      type: object
+      required: [reason]
+      properties:
+        reason:
+          type: string
+          enum: [STAFF_SIGN_OUT, SHIFT_END, OTHER]
+        note:
+          type: string
+          nullable: true
+      description: note is required when reason is OTHER.
+
+    ForceSignOutRequest:
+      type: object
+      required: [reason]
+      properties:
+        reason:
+          type: string
+          enum: [SECURITY, DEVICE_LOST, POLICY, OTHER]
+        note:
+          type: string
+          nullable: true
+      description: note is required when reason is OTHER.
+
+    AdminRegisterSessionSlot:
+      type: object
+      required: [registerNumber, session]
+      properties:
+        registerNumber:
+          $ref: '#/components/schemas/RegisterNumber'
+        session:
+          $ref: '#/components/schemas/RegisterSessionDTO'
+          nullable: true
+
+    AdminRegisterSessionsResponse:
+      type: object
+      required: [registers]
+      properties:
+        registers:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminRegisterSessionSlot'
