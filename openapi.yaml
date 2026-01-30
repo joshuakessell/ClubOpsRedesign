@@ -2,6 +2,9 @@ openapi: 3.0.3
 info:
   title: ClubOps Phase 1 API
   version: 0.1.0
+  license:
+    name: UNLICENSED
+    url: https://example.com/UNLICENSED
   description: |
     Phase 1 scope: staff PIN auth, device allowlist, register sessions (lifecycle + heartbeat + TTL), admin force sign-out, audit writes.
 
@@ -21,16 +24,22 @@ servers:
 
 tags:
   - name: health
+    description: Service health checks.
   - name: auth
+    description: Staff authentication and session endpoints.
   - name: devices
+    description: Device identity and allowlist validation.
   - name: registers
+    description: Register availability and session lifecycle.
   - name: admin
+    description: Admin-only device, register session, and audit endpoints.
 
 paths:
   /health:
     get:
       tags: [health]
       summary: Health check
+      operationId: healthCheck
       security: []
       responses:
         '200':
@@ -39,6 +48,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HealthResponse'
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
         '500':
           $ref: '#/components/responses/ErrorResponse'
 
@@ -46,6 +57,7 @@ paths:
     get:
       tags: [auth]
       summary: List staff for login selection UI
+      operationId: authListStaff
       description: Device-authenticated only.
       security:
         - DeviceIdHeader: []
@@ -66,6 +78,7 @@ paths:
     post:
       tags: [auth]
       summary: Staff PIN sign-in
+      operationId: authLoginPin
       description: Device-authenticated only. Returns a staff session token.
       security:
         - DeviceIdHeader: []
@@ -92,6 +105,7 @@ paths:
     post:
       tags: [auth]
       summary: Staff sign-out
+      operationId: authLogout
       security:
         - DeviceIdHeader: []
           DeviceTokenHeader: []
@@ -108,6 +122,7 @@ paths:
     get:
       tags: [auth]
       summary: Get current staff session
+      operationId: authMe
       security:
         - DeviceIdHeader: []
           DeviceTokenHeader: []
@@ -128,6 +143,7 @@ paths:
     get:
       tags: [devices]
       summary: Validate device headers and return device metadata
+      operationId: devicesMe
       security:
         - DeviceIdHeader: []
           DeviceTokenHeader: []
@@ -147,6 +163,7 @@ paths:
     get:
       tags: [admin]
       summary: List devices
+      operationId: adminDevicesList
       description: Admin only.
       security:
         - DeviceIdHeader: []
@@ -167,6 +184,7 @@ paths:
     post:
       tags: [admin]
       summary: Create device and provision token
+      operationId: adminDevicesCreate
       description: Admin only. Returns the raw provisioned device token once.
       security:
         - DeviceIdHeader: []
@@ -196,6 +214,7 @@ paths:
     patch:
       tags: [admin]
       summary: Update device (enable/disable/rename/kind)
+      operationId: adminDevicesUpdate
       description: Admin only. Disabling a device force-closes any active register session for that device.
       security:
         - DeviceIdHeader: []
@@ -234,6 +253,7 @@ paths:
     get:
       tags: [registers]
       summary: Register availability for register numbers 1..3
+      operationId: registersAvailability
       security:
         - DeviceIdHeader: []
           DeviceTokenHeader: []
@@ -254,6 +274,7 @@ paths:
     post:
       tags: [registers]
       summary: Open a register session
+      operationId: registerSessionsOpen
       description: Uses a uniqueness constraint to prevent multiple active sessions per register.
       security:
         - DeviceIdHeader: []
@@ -285,6 +306,7 @@ paths:
     post:
       tags: [registers]
       summary: Heartbeat for an active register session
+      operationId: registerSessionsHeartbeat
       description: Client target is every 30s; server TTL is configurable.
       security:
         - DeviceIdHeader: []
@@ -317,6 +339,7 @@ paths:
     post:
       tags: [registers]
       summary: Close a register session
+      operationId: registerSessionsClose
       security:
         - DeviceIdHeader: []
           DeviceTokenHeader: []
@@ -354,6 +377,7 @@ paths:
     get:
       tags: [registers]
       summary: Get active register session for a register number
+      operationId: registerSessionsActive
       security:
         - DeviceIdHeader: []
           DeviceTokenHeader: []
@@ -380,6 +404,7 @@ paths:
     get:
       tags: [admin]
       summary: List active register sessions (registers 1..3)
+      operationId: adminRegisterSessionsList
       description: Admin only. Always returns entries for registers 1..3.
       security:
         - DeviceIdHeader: []
@@ -401,6 +426,7 @@ paths:
     post:
       tags: [admin]
       summary: Force sign-out of a register session
+      operationId: adminRegisterSessionsForceSignout
       description: Admin only. Idempotent if already signed out.
       security:
         - DeviceIdHeader: []
@@ -436,6 +462,7 @@ paths:
     get:
       tags: [admin]
       summary: List audit log entries
+      operationId: adminAuditList
       description: Admin only. Cursor pagination uses (created_at, id) encoded as base64 JSON.
       security:
         - DeviceIdHeader: []
