@@ -432,6 +432,68 @@ paths:
         '404':
           $ref: '#/components/responses/ErrorResponse'
 
+  /admin/audit:
+    get:
+      tags: [admin]
+      summary: List audit log entries
+      description: Admin only. Cursor pagination uses (created_at, id) encoded as base64 JSON.
+      security:
+        - DeviceIdHeader: []
+          DeviceTokenHeader: []
+          StaffBearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 50
+            maximum: 200
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: entityType
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: entityId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: actorStaffId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: action
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: since
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Audit log entries
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditListResponse'
+        '401':
+          $ref: '#/components/responses/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/ErrorResponse'
+
 components:
   securitySchemes:
     DeviceIdHeader:
@@ -742,3 +804,52 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AdminRegisterSessionSlot'
+
+    AuditLog:
+      type: object
+      required:
+        - id
+        - action
+        - entityType
+        - entityId
+        - actorStaffId
+        - actorDeviceId
+        - metadata
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        action:
+          type: string
+        entityType:
+          type: string
+        entityId:
+          type: string
+          format: uuid
+        actorStaffId:
+          type: string
+          format: uuid
+          nullable: true
+        actorDeviceId:
+          type: string
+          format: uuid
+          nullable: true
+        metadata:
+          type: object
+          additionalProperties: true
+        createdAt:
+          type: string
+          format: date-time
+
+    AuditListResponse:
+      type: object
+      required: [items, nextCursor]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditLog'
+        nextCursor:
+          type: string
+          nullable: true

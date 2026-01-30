@@ -312,37 +312,43 @@ export class RegisterSessionsService {
 
   async closeExpiredSessions(): Promise<void> {
     const ttlSeconds = this.configuredTtlSeconds();
-    const cutoff = new Date(Date.now() - ttlSeconds * 1000);
     const batchSize = 100;
 
-    const closedSessions = await this.databaseService.transaction(async (trx) => {
-      const candidates = await this.registerSessionsRepository.listExpiredForTtl(trx, cutoff, batchSize);
-      const ids = candidates.map((row) => row.id);
-      const closed = await this.registerSessionsRepository.closeExpiredSessions(trx, ids);
-      for (const session of closed) {
-        await this.auditService.write(
-          {
-            action: 'REGISTER_SESSION_TTL_EXPIRED',
-            entityType: 'register_session',
-            entityId: session.id,
-            metadata: { reason: 'TTL_EXPIRED' },
-          },
-          trx
-        );
-      }
-      return closed;
-    });
-
-    for (const session of closedSessions) {
-      await this.eventsPublisher.publishRegisterSessionUpdated({
-        sessionId: session.id,
-        registerNumber: session.register_number,
-        deviceId: session.device_id,
-        staffId: session.staff_id,
-        status: 'ENDED',
-        endedReason: 'TTL_EXPIRED',
-        occurredAt: new Date().toISOString(),
+    while (true) {
+      const cutoff = new Date(Date.now() - ttlSeconds * 1000);
+      const closedSessions = await this.databaseService.transaction(async (trx) => {
+        const candidates = await this.registerSessionsRepository.listExpiredForTtl(trx, cutoff, batchSize);
+        const ids = candidates.map((row) => row.id);
+        const closed = await this.registerSessionsRepository.closeExpiredSessions(trx, ids);
+        for (const session of closed) {
+          await this.auditService.write(
+            {
+              action: 'REGISTER_SESSION_TTL_EXPIRED',
+              entityType: 'register_session',
+              entityId: session.id,
+              metadata: { reason: 'TTL_EXPIRED' },
+            },
+            trx
+          );
+        }
+        return closed;
       });
+
+      for (const session of closedSessions) {
+        await this.eventsPublisher.publishRegisterSessionUpdated({
+          sessionId: session.id,
+          registerNumber: session.register_number,
+          deviceId: session.device_id,
+          staffId: session.staff_id,
+          status: 'ENDED',
+          endedReason: 'TTL_EXPIRED',
+          occurredAt: new Date().toISOString(),
+        });
+      }
+
+      if (closedSessions.length < batchSize) {
+        break;
+      }
     }
   }
 

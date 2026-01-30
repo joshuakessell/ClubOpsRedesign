@@ -1,6 +1,9 @@
 {
   "packageManager": "pnpm@10.27.0",
   "private": true,
+  "scripts": {
+    "openapi:lint": "pnpm -s dlx @redocly/cli@1.27.0 lint openapi.yaml"
+  },
   "dependencies": {
     "@nestjs/common": "^10.3.0",
     "@nestjs/core": "^10.3.0",
