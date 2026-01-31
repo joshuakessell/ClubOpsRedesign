@@ -2,6 +2,7 @@
   "packageManager": "pnpm@10.27.0",
   "private": true,
   "scripts": {
+    "dev": "turbo run dev --parallel --filter=@clubops/customer-kiosk --filter=@clubops/employee-register --filter=@clubops/office-dashboard",
     "openapi:lint": "pnpm --package=@redocly/cli@1.27.0 dlx openapi lint openapi.yaml",
     "api:typecheck": "pnpm -C services/api typecheck",
     "api:test": "pnpm -C services/api test",
@@ -21,6 +22,7 @@
   "devDependencies": {
     "@types/express": "^4.17.21",
     "@types/node": "^20.12.12",
-    "shadcn": "^3.8.0"
+    "shadcn": "^3.8.0",
+    "turbo": "^2.0.6"
   }
 }

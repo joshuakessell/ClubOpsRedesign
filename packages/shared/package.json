@@ -1,0 +1,18 @@
+{
+  "name": "@clubops/shared",
+  "private": true,
+  "version": "0.0.0",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./api": "./src/api/index.ts",
+    "./auth": "./src/auth/index.ts"
+  },
+  "scripts": {
+    "generate:openapi": "openapi-typescript ../../openapi.yaml -o src/api/openapi.ts"
+  },
+  "devDependencies": {
+    "openapi-typescript": "^7.5.0",
+    "typescript": "^5.5.4"
+  }
+}

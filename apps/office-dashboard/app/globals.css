@@ -1,0 +1,34 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --background: 210 40% 98%;
+    --foreground: 220 16% 14%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 16% 14%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 16% 14%;
+    --primary: 160 84% 32%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 16% 90%;
+    --secondary-foreground: 220 16% 14%;
+    --muted: 210 16% 92%;
+    --muted-foreground: 220 10% 40%;
+    --accent: 160 40% 94%;
+    --accent-foreground: 220 16% 14%;
+    --destructive: 0 84% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 210 14% 85%;
+    --input: 210 14% 85%;
+    --ring: 160 84% 32%;
+    --radius: 0.75rem;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
