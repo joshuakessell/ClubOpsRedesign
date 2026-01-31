@@ -32,6 +32,18 @@ export class AssignmentsService {
     return this.assignmentsRepository.findActiveByVisit(db, visitId);
   }
 
+  async findActiveByInventoryItem(db: Kysely<Database>, inventoryItemId: string) {
+    return this.assignmentsRepository.findActiveByInventoryItem(db, inventoryItemId);
+  }
+
+  async releaseByVisitIdempotent(db: Kysely<Database>, visitId: string) {
+    return this.assignmentsRepository.releaseByVisit(db, visitId);
+  }
+
+  async reassign(db: Kysely<Database>, visitId: string, inventoryItemId: string) {
+    return this.assignmentsRepository.reassign(db, visitId, inventoryItemId);
+  }
+
   toDto(assignment: Selectable<Database['visit_assignments']>): VisitAssignmentDto {
     return {
       visitId: assignment.visit_id,

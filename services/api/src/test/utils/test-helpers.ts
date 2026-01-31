@@ -10,6 +10,7 @@ const migrationPaths = [
   path.resolve(__dirname, '../../../migrations/0001_phase1_staff_devices_register_sessions.sql'),
   path.resolve(__dirname, '../../../migrations/0002_phase2_inventory_keys_cleaning.sql'),
   path.resolve(__dirname, '../../../migrations/0003_phase3_customers_visits_assignments_agreements.sql'),
+  path.resolve(__dirname, '../../../migrations/0004_phase4_waitlist_holds_upgrades_checkout.sql'),
 ];
 
 function requireTestDb(): {
@@ -67,6 +68,13 @@ export async function migrateTestDatabase(): Promise<void> {
         const sql = fs.readFileSync(migrationPaths[2], 'utf8');
         await client.query(sql);
       }
+      const waitlistExists = await client.query(
+        "SELECT to_regclass('public.waitlist_entries') AS table_name"
+      );
+      if (!waitlistExists.rows[0]?.table_name) {
+        const sql = fs.readFileSync(migrationPaths[3], 'utf8');
+        await client.query(sql);
+      }
       migrated = true;
     } finally {
       await client.query('SELECT pg_advisory_unlock(987654321)');
@@ -77,7 +85,7 @@ export async function migrateTestDatabase(): Promise<void> {
 export async function truncateAll(): Promise<void> {
   await withClient((client) =>
     client.query(
-      'TRUNCATE TABLE agreements, visit_assignments, visit_renewals, visits, customers, cleaning_batch_items, cleaning_batches, key_tags, inventory_items, audit_log, staff_sessions, register_sessions, devices, staff RESTART IDENTITY'
+      'TRUNCATE TABLE checkout_events, upgrade_offers, inventory_holds, waitlist_entries, agreements, visit_assignments, visit_renewals, visits, customers, cleaning_batch_items, cleaning_batches, key_tags, inventory_items, audit_log, staff_sessions, register_sessions, devices, staff RESTART IDENTITY'
     )
   );
 }
@@ -266,6 +274,36 @@ export async function fetchVisitAssignment(visitId: string) {
       inventory_item_id: string;
       assigned_at: Date;
       released_at: Date | null;
+    } | undefined;
+  });
+}
+
+export async function fetchActiveVisitAssignment(visitId: string) {
+  return withClient(async (client) => {
+    const result = await client.query(
+      'SELECT visit_id, inventory_item_id, assigned_at, released_at FROM visit_assignments WHERE visit_id=$1 AND released_at IS NULL',
+      [visitId]
+    );
+    return result.rows[0] as {
+      visit_id: string;
+      inventory_item_id: string;
+      assigned_at: Date;
+      released_at: Date | null;
+    } | undefined;
+  });
+}
+
+export async function fetchHold(holdId: string) {
+  return withClient(async (client) => {
+    const result = await client.query(
+      'SELECT id, inventory_item_id, status, expires_at FROM inventory_holds WHERE id=$1',
+      [holdId]
+    );
+    return result.rows[0] as {
+      id: string;
+      inventory_item_id: string;
+      status: string;
+      expires_at: Date;
     } | undefined;
   });
 }

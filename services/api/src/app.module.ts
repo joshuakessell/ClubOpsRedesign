@@ -16,6 +16,10 @@ import { CleaningModule } from './domains/cleaning/cleaning.module';
 import { CustomersModule } from './domains/customers/customers.module';
 import { VisitsModule } from './domains/visits/visits.module';
 import { AgreementsModule } from './domains/agreements/agreements.module';
+import { WaitlistModule } from './domains/waitlist/waitlist.module';
+import { HoldsModule } from './domains/holds/holds.module';
+import { UpgradesModule } from './domains/upgrades/upgrades.module';
+import { CheckoutModule } from './domains/checkout/checkout.module';
 import { AdminModule } from './application/admin/admin.module';
 
 @Module({
@@ -37,6 +41,10 @@ import { AdminModule } from './application/admin/admin.module';
     CustomersModule,
     VisitsModule,
     AgreementsModule,
+    WaitlistModule,
+    HoldsModule,
+    UpgradesModule,
+    CheckoutModule,
     AdminModule,
   ],
 })

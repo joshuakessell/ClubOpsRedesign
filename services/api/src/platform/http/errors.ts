@@ -24,7 +24,14 @@ export type ErrorCode =
   | 'VISIT_ALREADY_ACTIVE'
   | 'VISIT_MAX_DURATION_EXCEEDED'
   | 'INVENTORY_UNAVAILABLE_FOR_ASSIGNMENT'
-  | 'AGREEMENT_ALREADY_CAPTURED';
+  | 'AGREEMENT_ALREADY_CAPTURED'
+  | 'WAITLIST_NOT_FOUND'
+  | 'HOLD_NOT_FOUND'
+  | 'HOLD_CONFLICT'
+  | 'HOLD_EXPIRED'
+  | 'UPGRADE_NOT_FOUND'
+  | 'UPGRADE_ALREADY_DECIDED'
+  | 'CHECKOUT_ALREADY_COMPLETED';
 
 export function errorResponse(error: string, message: string, code?: ErrorCode) {
   return { error, message, code };

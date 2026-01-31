@@ -132,6 +132,44 @@ export interface AgreementsTable {
   metadata: Record<string, unknown>;
 }
 
+export interface WaitlistEntriesTable {
+  id: Generated<string>;
+  customer_id: string;
+  requested_type: 'room' | 'locker' | 'any';
+  status: 'OPEN' | 'CANCELLED' | 'FULFILLED';
+  notes: string | null;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface InventoryHoldsTable {
+  id: Generated<string>;
+  inventory_item_id: string;
+  visit_id: string | null;
+  waitlist_entry_id: string | null;
+  status: 'ACTIVE' | 'RELEASED' | 'EXPIRED';
+  expires_at: Date;
+  created_at: Date;
+}
+
+export interface UpgradeOffersTable {
+  id: Generated<string>;
+  visit_id: string;
+  from_inventory_item_id: string;
+  to_inventory_type: 'room' | 'locker';
+  status: 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'EXPIRED';
+  expires_at: Date;
+  created_at: Date;
+}
+
+export interface CheckoutEventsTable {
+  id: Generated<string>;
+  visit_id: string;
+  requested_at: Date;
+  completed_at: Date | null;
+  method: 'KIOSK' | 'REGISTER' | 'ADMIN';
+}
+
 export interface Database {
   staff: StaffTable;
   devices: DevicesTable;
@@ -147,4 +185,8 @@ export interface Database {
   visit_renewals: VisitRenewalsTable;
   visit_assignments: VisitAssignmentsTable;
   agreements: AgreementsTable;
+  waitlist_entries: WaitlistEntriesTable;
+  inventory_holds: InventoryHoldsTable;
+  upgrade_offers: UpgradeOffersTable;
+  checkout_events: CheckoutEventsTable;
 }

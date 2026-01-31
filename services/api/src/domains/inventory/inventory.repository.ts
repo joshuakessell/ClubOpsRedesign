@@ -38,6 +38,20 @@ export class InventoryRepository {
       .executeTakeFirst();
   }
 
+  async findAvailableByTypeForUpdate(
+    db: Kysely<Database>,
+    type: InventoryItemType
+  ): Promise<Selectable<Database['inventory_items']> | undefined> {
+    return db
+      .selectFrom('inventory_items')
+      .selectAll()
+      .where('type', '=', type)
+      .where('status', '=', 'AVAILABLE')
+      .orderBy('name', 'asc')
+      .forUpdate()
+      .executeTakeFirst();
+  }
+
   async create(
     db: Kysely<Database>,
     values: Insertable<Database['inventory_items']>

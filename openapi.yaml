@@ -43,6 +43,14 @@ tags:
     description: Visit lifecycle and assignments.
   - name: agreements
     description: Visit agreement capture.
+  - name: waitlist
+    description: Waitlist entries and lifecycle.
+  - name: holds
+    description: Inventory holds and reservations.
+  - name: upgrades
+    description: Upgrade offers for visits.
+  - name: checkout
+    description: Checkout requests and completion.
   - name: admin
     description: Admin-only device, register session, and audit endpoints.
 
@@ -691,6 +699,327 @@ paths:
         '409':
           $ref: '#/components/responses/ErrorResponse'
 
+  /waitlist:
+    post:
+      tags: [waitlist]
+      summary: Create waitlist entry
+      operationId: waitlistCreate
+      security:
+        - DeviceIdHeader: []
+          DeviceTokenHeader: []
+          StaffBearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateWaitlistRequest'
+      responses:
+        '201':
+          description: Waitlist entry created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WaitlistEntryDTO'
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/ErrorResponse'
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+
+    get:
+      tags: [waitlist]
+      summary: List waitlist entries
+      operationId: waitlistList
+      security:
+        - DeviceIdHeader: []
+          DeviceTokenHeader: []
+          StaffBearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/WaitlistStatus'
+      responses:
+        '200':
+          description: Waitlist entries
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WaitlistListResponse'
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /waitlist/{id}/cancel:
+    post:
+      tags: [waitlist]
+      summary: Cancel waitlist entry
+      operationId: waitlistCancel
+      security:
+        - DeviceIdHeader: []
+          DeviceTokenHeader: []
+          StaffBearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Waitlist entry cancelled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WaitlistEntryDTO'
+        '401':
+          $ref: '#/components/responses/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/ErrorResponse'
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /holds:
+    post:
+      tags: [holds]
+      summary: Create inventory hold
+      operationId: holdsCreate
+      security:
+        - DeviceIdHeader: []
+          DeviceTokenHeader: []
+          StaffBearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateHoldRequest'
+      responses:
+        '201':
+          description: Hold created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HoldDTO'
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/ErrorResponse'
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+        '409':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /holds/{id}/release:
+    post:
+      tags: [holds]
+      summary: Release inventory hold
+      operationId: holdsRelease
+      security:
+        - DeviceIdHeader: []
+          DeviceTokenHeader: []
+          StaffBearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Hold released
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HoldDTO'
+        '401':
+          $ref: '#/components/responses/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/ErrorResponse'
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+        '409':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /upgrades/offer:
+    post:
+      tags: [upgrades]
+      summary: Create upgrade offer
+      operationId: upgradesOffer
+      security:
+        - DeviceIdHeader: []
+          DeviceTokenHeader: []
+          StaffBearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUpgradeOfferRequest'
+      responses:
+        '201':
+          description: Upgrade offer created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpgradeOfferDTO'
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/ErrorResponse'
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+        '409':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /upgrades/{id}/accept:
+    post:
+      tags: [upgrades]
+      summary: Accept upgrade offer
+      operationId: upgradesAccept
+      security:
+        - DeviceIdHeader: []
+          DeviceTokenHeader: []
+          StaffBearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Upgrade offer accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpgradeOfferDTO'
+        '401':
+          $ref: '#/components/responses/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/ErrorResponse'
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+        '409':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /upgrades/{id}/decline:
+    post:
+      tags: [upgrades]
+      summary: Decline upgrade offer
+      operationId: upgradesDecline
+      security:
+        - DeviceIdHeader: []
+          DeviceTokenHeader: []
+          StaffBearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Upgrade offer declined
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpgradeOfferDTO'
+        '401':
+          $ref: '#/components/responses/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/ErrorResponse'
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+        '409':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /checkout/{visitId}/request:
+    post:
+      tags: [checkout]
+      summary: Request checkout
+      operationId: checkoutRequest
+      security:
+        - DeviceIdHeader: []
+          DeviceTokenHeader: []
+          StaffBearerAuth: []
+      parameters:
+        - name: visitId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckoutRequest'
+      responses:
+        '201':
+          description: Checkout requested
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckoutEventDTO'
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/ErrorResponse'
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /checkout/{visitId}/complete:
+    post:
+      tags: [checkout]
+      summary: Complete checkout
+      operationId: checkoutComplete
+      security:
+        - DeviceIdHeader: []
+          DeviceTokenHeader: []
+          StaffBearerAuth: []
+      parameters:
+        - name: visitId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Checkout completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckoutEventDTO'
+        '401':
+          $ref: '#/components/responses/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/ErrorResponse'
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+        '409':
+          $ref: '#/components/responses/ErrorResponse'
+
   /inventory/items:
     get:
       tags: [inventory]
@@ -1111,6 +1440,13 @@ components:
             - VISIT_MAX_DURATION_EXCEEDED
             - INVENTORY_UNAVAILABLE_FOR_ASSIGNMENT
             - AGREEMENT_ALREADY_CAPTURED
+            - WAITLIST_NOT_FOUND
+            - HOLD_NOT_FOUND
+            - HOLD_CONFLICT
+            - HOLD_EXPIRED
+            - UPGRADE_NOT_FOUND
+            - UPGRADE_ALREADY_DECIDED
+            - CHECKOUT_ALREADY_COMPLETED
 
     HealthResponse:
       type: object
@@ -1140,6 +1476,26 @@ components:
       enum: [SIGNED, BYPASSED]
 
     AgreementMethod:
+      type: string
+      enum: [KIOSK, REGISTER, ADMIN]
+
+    WaitlistRequestedType:
+      type: string
+      enum: [room, locker, any]
+
+    WaitlistStatus:
+      type: string
+      enum: [OPEN, CANCELLED, FULFILLED]
+
+    HoldStatus:
+      type: string
+      enum: [ACTIVE, RELEASED, EXPIRED]
+
+    UpgradeStatus:
+      type: string
+      enum: [PENDING, ACCEPTED, DECLINED, EXPIRED]
+
+    CheckoutMethod:
       type: string
       enum: [KIOSK, REGISTER, ADMIN]
 
@@ -1330,6 +1686,167 @@ components:
         metadata:
           type: object
           additionalProperties: true
+
+    WaitlistEntryDTO:
+      type: object
+      required: [id, customerId, requestedType, status, notes, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        customerId:
+          type: string
+          format: uuid
+        requestedType:
+          $ref: '#/components/schemas/WaitlistRequestedType'
+        status:
+          $ref: '#/components/schemas/WaitlistStatus'
+        notes:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    WaitlistListResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/WaitlistEntryDTO'
+
+    CreateWaitlistRequest:
+      type: object
+      required: [customerId, requestedType]
+      properties:
+        customerId:
+          type: string
+          format: uuid
+        requestedType:
+          $ref: '#/components/schemas/WaitlistRequestedType'
+        notes:
+          type: string
+          nullable: true
+
+    HoldDTO:
+      type: object
+      required: [id, inventoryItemId, visitId, waitlistEntryId, status, expiresAt, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        inventoryItemId:
+          type: string
+          format: uuid
+        visitId:
+          type: string
+          format: uuid
+          nullable: true
+        waitlistEntryId:
+          type: string
+          format: uuid
+          nullable: true
+        status:
+          $ref: '#/components/schemas/HoldStatus'
+        expiresAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+
+    CreateHoldRequest:
+      type: object
+      required: [inventoryItemId, expiresAt]
+      properties:
+        inventoryItemId:
+          type: string
+          format: uuid
+        visitId:
+          type: string
+          format: uuid
+          nullable: true
+        waitlistEntryId:
+          type: string
+          format: uuid
+          nullable: true
+        expiresAt:
+          type: string
+          format: date-time
+
+    UpgradeOfferDTO:
+      type: object
+      required: [id, visitId, fromInventoryItemId, toInventoryType, status, expiresAt, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        visitId:
+          type: string
+          format: uuid
+        fromInventoryItemId:
+          type: string
+          format: uuid
+        toInventoryType:
+          type: string
+          enum: [room, locker]
+        status:
+          $ref: '#/components/schemas/UpgradeStatus'
+        expiresAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+
+    CreateUpgradeOfferRequest:
+      type: object
+      required: [visitId, fromInventoryItemId, toInventoryType, expiresAt]
+      properties:
+        visitId:
+          type: string
+          format: uuid
+        fromInventoryItemId:
+          type: string
+          format: uuid
+        toInventoryType:
+          type: string
+          enum: [room, locker]
+        expiresAt:
+          type: string
+          format: date-time
+
+    CheckoutEventDTO:
+      type: object
+      required: [id, visitId, requestedAt, completedAt, method]
+      properties:
+        id:
+          type: string
+          format: uuid
+        visitId:
+          type: string
+          format: uuid
+        requestedAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+        method:
+          $ref: '#/components/schemas/CheckoutMethod'
+
+    CheckoutRequest:
+      type: object
+      required: [method]
+      properties:
+        method:
+          $ref: '#/components/schemas/CheckoutMethod'
 
     CaptureAgreementRequest:
       type: object

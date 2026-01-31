@@ -18,6 +18,23 @@ export class AssignmentsRepository {
       .executeTakeFirst();
   }
 
+  async reassign(
+    db: Kysely<Database>,
+    visitId: string,
+    inventoryItemId: string
+  ): Promise<Selectable<Database['visit_assignments']> | undefined> {
+    return db
+      .updateTable('visit_assignments')
+      .set({
+        inventory_item_id: inventoryItemId,
+        assigned_at: new Date(),
+        released_at: null,
+      })
+      .where('visit_id', '=', visitId)
+      .returningAll()
+      .executeTakeFirst();
+  }
+
   async findActiveByVisit(
     db: Kysely<Database>,
     visitId: string

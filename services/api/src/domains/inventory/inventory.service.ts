@@ -173,6 +173,10 @@ export class InventoryService {
     return this.inventoryRepository.findByIdForUpdate(db, itemId);
   }
 
+  async findAvailableByTypeForUpdate(db: Kysely<Database>, type: InventoryItemType) {
+    return this.inventoryRepository.findAvailableByTypeForUpdate(db, type);
+  }
+
   private toDto(item: Selectable<Database['inventory_items']>): InventoryItemDto {
     return {
       id: item.id,

@@ -13,8 +13,6 @@ const forbiddenSegments = new Set([
   'orders',
   'cash_drawers',
   'cashdrawer',
-  'waitlist',
-  'upgrades',
   'timeclock',
   'shifts',
   'telemetry',
