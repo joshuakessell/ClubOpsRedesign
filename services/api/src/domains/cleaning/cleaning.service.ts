@@ -48,7 +48,7 @@ export class CleaningService {
     } else {
       for (const itemId of mode.values) {
         const result = await this.transitionItem(batch.id, itemId, request.toStatus, actor);
-        results.push(result);
+        results.push({ ...result, tagCode: null });
       }
     }
 
@@ -90,7 +90,7 @@ export class CleaningService {
     itemId: string,
     toStatus: CleaningTargetStatus,
     actor: { staffId: string; deviceId: string; role: 'staff' | 'admin' }
-  ): Promise<CleaningBatchResultDto> {
+  ): Promise<Omit<CleaningBatchResultDto, 'tagCode'>> {
     try {
       const outcome = await this.databaseService.transaction(async (trx) => {
         const { updated, fromStatus } = await this.inventoryService.transitionStatus(trx, itemId, toStatus, {

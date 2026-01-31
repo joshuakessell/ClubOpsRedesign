@@ -552,7 +552,7 @@ paths:
     post:
       tags: [cleaning]
       summary: Create a cleaning batch and transition statuses
-      description: If tagCodes are provided, itemIds are ignored.
+      description: If tagCodes are provided, itemIds are ignored. Result tagCode is null when itemIds are used; itemId is null when a tag scan fails or is unassigned.
       operationId: cleaningBatchCreate
       security:
         - DeviceIdHeader: []
@@ -991,7 +991,7 @@ components:
 
     CleaningBatchResult:
       type: object
-      required: [itemId, status]
+      required: [itemId, tagCode, status]
       properties:
         itemId:
           type: string
@@ -999,6 +999,7 @@ components:
           nullable: true
         tagCode:
           type: string
+          nullable: true
         status:
           type: string
           enum: [UPDATED, SKIPPED, FAILED]

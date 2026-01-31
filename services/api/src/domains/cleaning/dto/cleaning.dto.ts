@@ -8,7 +8,7 @@ export type CleaningBatchRequestDto = {
 
 export type CleaningBatchResultDto = {
   itemId: string | null;
-  tagCode?: string;
+  tagCode: string | null;
   status: 'UPDATED' | 'SKIPPED' | 'FAILED';
   message?: string;
 };

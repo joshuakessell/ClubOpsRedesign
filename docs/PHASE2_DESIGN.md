@@ -35,7 +35,7 @@ Notes:
 - `id uuid pk`
 - `type text` CHECK (`type` IN ('room','locker'))
 - `name text` (human readable name or number)
-- `status text` CHECK (`status` IN ('AVAILABLE','OCCUPIED','NEEDS_CLEANING','CLEANING','OUT_OF_SERVICE'))
+- `status text` CHECK (`status` IN ('AVAILABLE','OCCUPIED','DIRTY','CLEANING','OUT_OF_SERVICE'))
 - `notes text null`
 - `updated_at timestamptz not null default now()`
 - `created_at timestamptz not null default now()`
@@ -96,7 +96,7 @@ DTOs:
   - `id: string`
   - `type: 'room' | 'locker'`
   - `name: string`
-  - `status: 'AVAILABLE' | 'OCCUPIED' | 'NEEDS_CLEANING' | 'CLEANING' | 'OUT_OF_SERVICE'`
+- `status: 'AVAILABLE' | 'OCCUPIED' | 'DIRTY' | 'CLEANING' | 'OUT_OF_SERVICE'`
   - `notes?: string | null`
   - `updatedAt: string`
 

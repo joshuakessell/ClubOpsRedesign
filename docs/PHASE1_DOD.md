@@ -32,4 +32,4 @@ Use this checklist before moving to Phase 2. Every item must be true.
 
 ## Contract discipline
 - ✅ All controller routes exist in `openapi.yaml` (OpenAPI is authoritative)
-- ✅ Phase 1 boundaries are enforced by `pnpm phase1:check`
+- ✅ Phase 1 boundaries are enforced by `pnpm phase1:check` (scripts/phase-drift-check.cjs)
