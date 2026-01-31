@@ -11,7 +11,6 @@ const forbiddenSegments = new Set([
   'payments',
   'pricing',
   'orders',
-  'cash',
   'cash_drawers',
   'cashdrawer',
   'waitlist',
@@ -159,7 +158,7 @@ function main() {
   const { missing, extras } = checkOpenapiCoverage();
 
   if (forbidden.length === 0 && missing.length === 0 && extras.length === 0) {
-    console.log('Phase 1 drift check passed.');
+    console.log('Phase drift check passed.');
     return;
   }
 
