@@ -1,42 +1,41 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { DeviceSetupCard } from './components/device-setup-card';
 import { StaffLoginCard } from './components/staff-login-card';
-import { MeCard } from './components/me-card';
-import type { DeviceDto, StaffSessionDto } from '../lib/api';
+import type { DeviceDto } from '../lib/api';
 import {
   clearDeviceAuth,
+  clearStaffId,
   clearStaffToken,
   loadDeviceAuth,
+  loadStaffId,
   loadStaffToken,
   saveDeviceAuth,
+  saveStaffId,
   saveStaffToken,
   type DeviceAuth,
 } from '@clubops/shared';
 
 export default function HomePage() {
+  const router = useRouter();
   const [device, setDevice] = useState<DeviceAuth | null>(null);
   const [deviceDetails, setDeviceDetails] = useState<DeviceDto | null>(null);
   const [staffToken, setStaffToken] = useState<string | null>(null);
-  const [session, setSession] = useState<StaffSessionDto | null>(null);
+  const [staffId, setStaffId] = useState<string | null>(null);
 
   useEffect(() => {
     const storedDevice = loadDeviceAuth();
     const storedToken = loadStaffToken();
+    const storedStaffId = loadStaffId();
     setDevice(storedDevice);
     setStaffToken(storedToken);
-  }, []);
-
-  const handleSessionRefresh = useCallback((next: StaffSessionDto) => {
-    setSession(next);
-  }, []);
-
-  const handleSignOut = useCallback(() => {
-    clearStaffToken();
-    setStaffToken(null);
-    setSession(null);
-  }, []);
+    setStaffId(storedStaffId);
+    if (storedDevice && storedToken) {
+      router.replace('/register/scan');
+    }
+  }, [router]);
 
   const hasDevice = Boolean(device);
   const hasSession = Boolean(device && staffToken);
@@ -59,6 +58,9 @@ export default function HomePage() {
         {deviceMeta && (
           <p className="mt-3 text-xs text-muted-foreground">Device: {deviceMeta}</p>
         )}
+        {staffId && (
+          <p className="mt-1 text-xs text-muted-foreground">Staff ID: {staffId}</p>
+        )}
       </header>
 
       <main className="mx-auto max-w-4xl px-6 pb-16 pt-10">
@@ -78,20 +80,18 @@ export default function HomePage() {
               device={device}
               onAuthenticated={(response) => {
                 saveStaffToken(response.sessionToken);
+                saveStaffId(response.session.staffId);
                 setStaffToken(response.sessionToken);
-                setSession(response.session);
+                setStaffId(response.session.staffId);
+                router.replace('/register/scan');
               }}
             />
           )}
 
-          {hasDevice && hasSession && device && staffToken && (
-            <MeCard
-              device={device}
-              staffToken={staffToken}
-              session={session}
-              onRefresh={handleSessionRefresh}
-              onSignOut={handleSignOut}
-            />
+          {hasDevice && hasSession && (
+            <section className="rounded-2xl border bg-card/70 p-4 text-sm text-muted-foreground">
+              Redirecting to the register workspace…
+            </section>
           )}
 
           {hasDevice && (
@@ -102,10 +102,11 @@ export default function HomePage() {
                   className="text-sm font-medium text-foreground underline-offset-4 hover:underline"
                   onClick={() => {
                     clearDeviceAuth();
+                    clearStaffId();
                     clearStaffToken();
                     setDevice(null);
                     setStaffToken(null);
-                    setSession(null);
+                    setStaffId(null);
                     setDeviceDetails(null);
                   }}
                 >

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Button } from '@clubops/ui';
 import {
   clearDeviceAuth,
+  clearStaffId,
   clearStaffToken,
   loadDeviceAuth,
   loadStaffToken,
@@ -52,6 +53,7 @@ export function AuthPanel({ onChange }: { onChange: (state: AuthState) => void }
 
   const handleClear = () => {
     clearDeviceAuth();
+    clearStaffId();
     clearStaffToken();
     setDeviceId('');
     setDeviceToken('');

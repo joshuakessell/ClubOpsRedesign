@@ -6,6 +6,7 @@ export type DeviceAuth = {
 const DEVICE_ID_KEY = 'clubops_device_id';
 const DEVICE_TOKEN_KEY = 'clubops_device_token';
 const STAFF_TOKEN_KEY = 'clubops_staff_token';
+const STAFF_ID_KEY = 'clubops_staff_id';
 
 export function loadDeviceAuth(): DeviceAuth | null {
   if (typeof window === 'undefined') return null;
@@ -32,12 +33,27 @@ export function loadStaffToken(): string | null {
   return window.localStorage.getItem(STAFF_TOKEN_KEY);
 }
 
+export function loadStaffId(): string | null {
+  if (typeof window === 'undefined') return null;
+  return window.localStorage.getItem(STAFF_ID_KEY);
+}
+
 export function saveStaffToken(token: string) {
   if (typeof window === 'undefined') return;
   window.localStorage.setItem(STAFF_TOKEN_KEY, token);
 }
 
+export function saveStaffId(staffId: string) {
+  if (typeof window === 'undefined') return;
+  window.localStorage.setItem(STAFF_ID_KEY, staffId);
+}
+
 export function clearStaffToken() {
   if (typeof window === 'undefined') return;
   window.localStorage.removeItem(STAFF_TOKEN_KEY);
+}
+
+export function clearStaffId() {
+  if (typeof window === 'undefined') return;
+  window.localStorage.removeItem(STAFF_ID_KEY);
 }
