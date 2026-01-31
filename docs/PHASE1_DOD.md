@@ -5,8 +5,9 @@ Use this checklist before moving to Phase 2. Every item must be true.
 ## Build and contract
 - ✅ API boots with DB connected
 - ✅ `pnpm openapi:lint` passes
-- ✅ `pnpm -C services/api typecheck` passes
-- ✅ `pnpm -C services/api test` passes
+- ✅ `pnpm api:typecheck` passes
+- ✅ `pnpm api:test` passes
+- ✅ `pnpm spec:check` passes
 
 ## Register sessions
 - ✅ One active session per register enforced by DB constraint

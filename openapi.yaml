@@ -93,6 +93,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StaffLoginResponse'
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
         '401':
           $ref: '#/components/responses/ErrorResponse'
         '403':
@@ -364,6 +366,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RegisterSessionDTO'
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
         '401':
           $ref: '#/components/responses/ErrorResponse'
         '403':
@@ -395,6 +399,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RegisterSessionNullableResponse'
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
         '401':
           $ref: '#/components/responses/ErrorResponse'
         '403':
@@ -451,6 +457,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RegisterSessionDTO'
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
         '401':
           $ref: '#/components/responses/ErrorResponse'
         '403':
@@ -516,6 +524,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuditListResponse'
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
         '401':
           $ref: '#/components/responses/ErrorResponse'
         '403':

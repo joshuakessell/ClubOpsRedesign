@@ -3,6 +3,8 @@
   "private": true,
   "scripts": {
     "openapi:lint": "pnpm --package=@redocly/cli@1.27.0 dlx openapi lint openapi.yaml",
+    "api:typecheck": "pnpm -C services/api typecheck",
+    "api:test": "pnpm -C services/api test",
     "phase1:check": "node scripts/phase1-drift-check.cjs",
     "spec:check": "pnpm phase1:check"
   },

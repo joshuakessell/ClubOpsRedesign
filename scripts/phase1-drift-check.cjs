@@ -16,6 +16,7 @@ const forbiddenSegments = new Set([
   'shifts',
   'telemetry',
   'websocket',
+  'websockets',
   'gateway',
 ]);
 
@@ -129,22 +130,31 @@ function checkOpenapiCoverage() {
   const openapiPaths = readOpenapiPaths();
   const routes = findControllerRoutes();
   const missing = [];
+  const routePaths = new Set();
 
   for (const route of routes) {
     const normalized = normalizePath(route.prefix, route.route);
+    routePaths.add(normalized);
     if (!openapiPaths.has(normalized)) {
       missing.push({ path: normalized, file: path.relative(root, route.file) });
     }
   }
 
-  return missing;
+  const extras = [];
+  for (const pathEntry of openapiPaths) {
+    if (!routePaths.has(pathEntry)) {
+      extras.push(pathEntry);
+    }
+  }
+
+  return { missing, extras };
 }
 
 function main() {
   const forbidden = findForbiddenPaths();
-  const missingRoutes = checkOpenapiCoverage();
+  const { missing, extras } = checkOpenapiCoverage();
 
-  if (forbidden.length === 0 && missingRoutes.length === 0) {
+  if (forbidden.length === 0 && missing.length === 0 && extras.length === 0) {
     console.log('Phase 1 drift check passed.');
     return;
   }
@@ -156,10 +166,17 @@ function main() {
     }
   }
 
-  if (missingRoutes.length > 0) {
+  if (missing.length > 0) {
     console.error('Controller routes missing from openapi.yaml:');
-    for (const item of missingRoutes) {
+    for (const item of missing) {
       console.error(`- ${item.path} (${item.file})`);
+    }
+  }
+
+  if (extras.length > 0) {
+    console.error('OpenAPI paths missing controller routes:');
+    for (const item of extras) {
+      console.error(`- ${item}`);
     }
   }
 
