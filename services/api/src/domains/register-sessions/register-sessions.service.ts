@@ -164,6 +164,9 @@ export class RegisterSessionsService {
     if (session.device_id !== deviceId) {
       throwForbidden('Device does not match session', 'FORBIDDEN');
     }
+    if (session.staff_id !== staffId) {
+      throwForbidden('Only the opening staff member can close this session', 'FORBIDDEN');
+    }
 
     const updated = await this.databaseService.transaction(async (trx) => {
       const closed = await this.registerSessionsRepository.closeSession(

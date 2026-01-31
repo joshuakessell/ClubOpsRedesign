@@ -3,7 +3,6 @@ export type DeviceContext = {
   name: string;
   kind: 'register' | 'kiosk' | 'office';
   enabled: boolean;
-  lastSeenAt?: string | null;
 };
 
 export type StaffSessionContext = {

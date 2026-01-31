@@ -15,6 +15,11 @@ export class DevicesReadService {
     return this.devicesRepository.findById(db, deviceId);
   }
 
+  async findDtoById(deviceId: string): Promise<DeviceDto | null> {
+    const device = await this.findById(deviceId);
+    return device ? this.toDto(device) : null;
+  }
+
   async findByTokenHash(tokenHash: string) {
     const db = this.databaseService.client;
     return this.devicesRepository.findByTokenHash(db, tokenHash);

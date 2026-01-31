@@ -3,6 +3,7 @@ import { DeviceAuthGuard } from '../../platform/auth-device/device-auth.guard';
 import { AdminGuard } from '../../domains/auth-staff/guards/admin.guard';
 import { StaffAuthGuard } from '../../domains/auth-staff/guards/staff-auth.guard';
 import { AuditReadService } from '../../domains/audit/audit-read.service';
+import type { AuditReadQueryInput } from '../../domains/audit/audit-read.service';
 import type { Request } from 'express';
 import type { RequestContext } from '../../platform/http/request-context';
 import { throwUnauthorized } from '../../platform/http/errors';
@@ -13,18 +14,10 @@ export class AdminAuditController {
 
   @Get()
   @UseGuards(DeviceAuthGuard, StaffAuthGuard, AdminGuard)
-  async list(@Query() query: Record<string, string>, @Req() req: Request & RequestContext) {
+  async list(@Query() query: AuditReadQueryInput, @Req() req: Request & RequestContext) {
     if (!req.staffSession || !req.device) {
       throwUnauthorized('Staff session or device context missing', 'STAFF_UNAUTHORIZED');
     }
-    return this.auditReadService.listAudit({
-      limit: query.limit,
-      cursor: query.cursor,
-      entityType: query.entityType,
-      entityId: query.entityId,
-      actorStaffId: query.actorStaffId,
-      action: query.action,
-      since: query.since,
-    });
+    return this.auditReadService.listAudit(query);
   }
 }

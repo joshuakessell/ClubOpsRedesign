@@ -72,7 +72,7 @@ export class AuditReadService {
 
   private decodeCursor(cursor: string): { createdAt: Date; id: string } {
     try {
-      const json = Buffer.from(cursor, 'base64').toString('utf8');
+      const json = Buffer.from(cursor, 'base64url').toString('utf8');
       const data = JSON.parse(json) as { createdAt: string; id: string };
       if (!data?.createdAt || !data?.id) {
         throw new Error('Invalid cursor shape');
@@ -83,12 +83,12 @@ export class AuditReadService {
       }
       return { createdAt, id: data.id };
     } catch {
-      throwValidation('cursor must be a valid base64 JSON payload');
+      throwValidation('cursor must be a valid base64url JSON payload');
     }
   }
 
   private encodeCursor(item: AuditLogDto): string {
     const payload = JSON.stringify({ createdAt: item.createdAt, id: item.id });
-    return Buffer.from(payload, 'utf8').toString('base64');
+    return Buffer.from(payload, 'utf8').toString('base64url');
   }
 }

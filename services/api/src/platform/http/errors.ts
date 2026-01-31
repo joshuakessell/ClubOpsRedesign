@@ -3,11 +3,13 @@ import { HttpException, HttpStatus } from '@nestjs/common';
 export type ErrorCode =
   | 'DEVICE_UNAUTHORIZED'
   | 'DEVICE_DISABLED'
+  | 'DEVICE_NOT_FOUND'
   | 'STAFF_UNAUTHORIZED'
   | 'STAFF_SESSION_EXPIRED'
   | 'STAFF_DISABLED'
   | 'FORBIDDEN'
   | 'VALIDATION_ERROR'
+  | 'RATE_LIMITED'
   | 'REGISTER_SESSION_NOT_FOUND'
   | 'REGISTER_SESSION_NOT_ACTIVE'
   | 'REGISTER_ACTIVE_CONFLICT'
@@ -44,4 +46,8 @@ export function throwNotFound(message: string, code: ErrorCode): never {
 
 export function throwConflict(message: string, code: ErrorCode): never {
   throwHttpError(HttpStatus.CONFLICT, 'Conflict', message, code);
+}
+
+export function throwRateLimited(message: string): never {
+  throwHttpError(HttpStatus.TOO_MANY_REQUESTS, 'Too Many Requests', message, 'RATE_LIMITED');
 }

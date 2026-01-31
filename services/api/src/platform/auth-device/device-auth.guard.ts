@@ -16,13 +16,11 @@ export class DeviceAuthGuard implements CanActivate {
       throwUnauthorized('Device headers required', 'DEVICE_UNAUTHORIZED');
     }
     const device = await this.deviceAuthService.validateDevice(deviceId, deviceToken);
-    const nowIso = new Date().toISOString();
     request.device = {
       id: device.id,
       name: device.name,
       kind: device.kind,
       enabled: device.enabled,
-      lastSeenAt: nowIso,
     };
     return true;
   }

@@ -5,11 +5,15 @@ import type { StaffLoginRequestDto, StaffLoginResponseDto, StaffSessionDto } fro
 import { ConfigService } from '../../platform/config/config.service';
 import { DatabaseService } from '../../platform/database/database.service';
 import { hashTokenDeterministic, verifySecretWithSalt } from '../../platform/security/hash';
-import { throwForbidden, throwUnauthorized, throwValidation } from '../../platform/http/errors';
+import { throwForbidden, throwRateLimited, throwUnauthorized, throwValidation } from '../../platform/http/errors';
 import { randomBytes } from 'crypto';
 
 @Injectable()
 export class AuthStaffService {
+  private readonly loginRateLimitWindowMs = 60_000;
+  private readonly loginRateLimitMaxAttempts = 10;
+  private readonly loginAttempts = new Map<string, { count: number; resetAt: number }>();
+
   constructor(
     private readonly staffReadService: StaffReadService,
     private readonly staffSessionsRepository: StaffSessionsRepository,
@@ -23,11 +27,12 @@ export class AuthStaffService {
   }
 
   async loginWithPin(body: StaffLoginRequestDto, deviceId: string): Promise<StaffLoginResponseDto> {
-    if (!body.identifier || !body.pin) {
-      throwValidation('Identifier and PIN are required');
-    }
     if (!deviceId) {
       throwValidation('deviceId is required');
+    }
+    this.enforceLoginRateLimit(deviceId);
+    if (!body.identifier || !body.pin) {
+      throwValidation('Identifier and PIN are required');
     }
 
     const staff = await this.staffReadService.findByIdentifier(body.identifier);
@@ -133,5 +138,19 @@ export class AuthStaffService {
       role: staff.role,
       deviceId: session.device_id,
     };
+  }
+
+  private enforceLoginRateLimit(deviceId: string): void {
+    const now = Date.now();
+    const current = this.loginAttempts.get(deviceId);
+    if (!current || now >= current.resetAt) {
+      this.loginAttempts.set(deviceId, { count: 1, resetAt: now + this.loginRateLimitWindowMs });
+      return;
+    }
+    const nextCount = current.count + 1;
+    if (nextCount > this.loginRateLimitMaxAttempts) {
+      throwRateLimited('Too many login attempts, please try again later');
+    }
+    current.count = nextCount;
   }
 }

@@ -4,7 +4,6 @@ info:
   version: 0.1.0
   license:
     name: UNLICENSED
-    url: https://example.com/UNLICENSED
   description: |
     Phase 1 scope: staff PIN auth, device allowlist, register sessions (lifecycle + heartbeat + TTL), admin force sign-out, audit writes.
 
@@ -48,8 +47,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HealthResponse'
-        '400':
-          $ref: '#/components/responses/ErrorResponse'
         '500':
           $ref: '#/components/responses/ErrorResponse'
 
@@ -79,7 +76,7 @@ paths:
       tags: [auth]
       summary: Staff PIN sign-in
       operationId: authLoginPin
-      description: Device-authenticated only. Returns a staff session token.
+      description: Device-authenticated only. Returns a staff session token. Rate limited per device.
       security:
         - DeviceIdHeader: []
           DeviceTokenHeader: []
@@ -99,6 +96,8 @@ paths:
         '401':
           $ref: '#/components/responses/ErrorResponse'
         '403':
+          $ref: '#/components/responses/ErrorResponse'
+        '429':
           $ref: '#/components/responses/ErrorResponse'
 
   /auth/logout:
@@ -339,6 +338,7 @@ paths:
     post:
       tags: [registers]
       summary: Close a register session
+      description: Only the staff member who opened the session can close it. Admins must use force sign-out.
       operationId: registerSessionsClose
       security:
         - DeviceIdHeader: []
@@ -463,7 +463,7 @@ paths:
       tags: [admin]
       summary: List audit log entries
       operationId: adminAuditList
-      description: Admin only. Cursor pagination uses (created_at, id) encoded as base64 JSON.
+      description: Admin only. Cursor pagination uses (created_at, id) encoded as base64url JSON.
       security:
         - DeviceIdHeader: []
           DeviceTokenHeader: []
@@ -558,11 +558,13 @@ components:
           enum:
             - DEVICE_UNAUTHORIZED
             - DEVICE_DISABLED
+            - DEVICE_NOT_FOUND
             - STAFF_UNAUTHORIZED
             - STAFF_SESSION_EXPIRED
             - STAFF_DISABLED
             - FORBIDDEN
             - VALIDATION_ERROR
+            - RATE_LIMITED
             - REGISTER_SESSION_NOT_FOUND
             - REGISTER_SESSION_NOT_ACTIVE
             - REGISTER_ACTIVE_CONFLICT

@@ -61,7 +61,7 @@ export class DevicesService {
     });
 
     if (!update) {
-      throwNotFound('Device not found', 'VALIDATION_ERROR');
+      throwNotFound('Device not found', 'DEVICE_NOT_FOUND');
     }
 
     return this.toDto(update);
