@@ -1,3 +1,5 @@
+'use client';
+
 import { Card, CardContent, CardHeader, CardTitle } from '@clubops/ui';
 
 export default function FirstTimePage() {

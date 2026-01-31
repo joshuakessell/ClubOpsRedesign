@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Badge, Button, Card, CardContent, CardHeader, CardTitle, Input, Label } from '@clubops/ui';
+import { Badge, Button, Card, CardContent, CardHeader, CardTitle, Input, Label, toast } from '@clubops/ui';
 import { loadDeviceAuth, loadStaffToken, type DeviceAuth } from '@clubops/shared';
 import { searchCustomers, type CustomerDto } from '../../../lib/api';
-import { useRegisterContext } from '../register-context';
+import { useRegisterStore } from '../register-store';
+import Link from 'next/link';
 
 export default function ScanPage() {
   const [device, setDevice] = useState<DeviceAuth | null>(null);
@@ -13,7 +14,8 @@ export default function ScanPage() {
   const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle');
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<CustomerDto[]>([]);
-  const { selectedCustomer, setSelectedCustomer } = useRegisterContext();
+  const { selectedCustomer, setSelectedCustomer, createOrLoadCart, addLineItem } =
+    useRegisterStore();
 
   useEffect(() => {
     setDevice(loadDeviceAuth());
@@ -41,6 +43,22 @@ export default function ScanPage() {
       const message = err instanceof Error ? err.message : 'Unable to search customers.';
       setStatus('error');
       setError(message);
+    }
+  };
+
+  const handleAddDropIn = async () => {
+    try {
+      await createOrLoadCart();
+      await addLineItem({
+        sku: 'DROPIN',
+        name: 'Drop-In',
+        qty: 1,
+        unitPrice: 0,
+      });
+      toast.success('Added Drop-In to cart.');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to add item.';
+      toast.error(message);
     }
   };
 
@@ -139,7 +157,7 @@ export default function ScanPage() {
               <p className="text-sm text-muted-foreground">Select a customer to see details.</p>
             )}
             {selectedCustomer && selectedDetails && (
-              <div className="grid gap-2 text-sm">
+              <div className="grid gap-3 text-sm">
                 <p className="font-semibold text-foreground">{selectedDetails.name}</p>
                 {selectedDetails.contact && (
                   <p className="text-muted-foreground">{selectedDetails.contact}</p>
@@ -147,13 +165,17 @@ export default function ScanPage() {
                 <p className="text-xs text-muted-foreground">
                   Customer ID: {selectedCustomer.id}
                 </p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSelectedCustomer(null)}
-                >
-                  Clear selection
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  <Button size="sm" onClick={handleAddDropIn}>
+                    Add Drop-In
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => setSelectedCustomer(null)}>
+                    Clear selection
+                  </Button>
+                  <Button asChild variant="ghost" size="sm">
+                    <Link href="/register/checkout">Go to checkout</Link>
+                  </Button>
+                </div>
               </div>
             )}
           </CardContent>

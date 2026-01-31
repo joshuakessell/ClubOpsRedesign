@@ -7,11 +7,16 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
+    "@radix-ui/react-dialog": "^1.1.2",
     "@radix-ui/react-label": "^2.1.0",
+    "@radix-ui/react-select": "^2.1.2",
     "@radix-ui/react-separator": "^1.1.0",
     "@radix-ui/react-slot": "^1.1.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
+    "lucide-react": "^0.454.0",
+    "next-themes": "^0.3.0",
+    "sonner": "^1.5.0",
     "tailwind-merge": "^2.4.0"
   },
   "peerDependencies": {

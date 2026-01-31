@@ -26,7 +26,6 @@ import {
   type RegisterNumber,
   type RegisterSessionDto,
 } from '../../lib/api';
-import { RegisterProvider } from './register-context';
 
 const navItems = [
   { href: '/register/scan', label: 'Scan' },
@@ -126,9 +125,8 @@ export default function RegisterLayout({ children }: { children: React.ReactNode
   }, [gateState.activeSession]);
 
   return (
-    <RegisterProvider>
-      <div className="min-h-screen bg-background">
-        <div className="flex min-h-screen">
+    <div className="min-h-screen bg-background">
+      <div className="flex min-h-screen">
           <aside className="w-64 shrink-0 border-r bg-card/80 px-4 py-6">
             <div className="px-2">
               <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
@@ -266,8 +264,7 @@ export default function RegisterLayout({ children }: { children: React.ReactNode
               {hasAuth && status === 'idle' && gateState.activeSession && children}
             </main>
           </div>
-        </div>
       </div>
-    </RegisterProvider>
+    </div>
   );
 }

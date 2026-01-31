@@ -1,7 +1,13 @@
 export { Badge, badgeVariants } from './components/badge';
 export { Button, buttonVariants } from './components/button';
 export { Card, CardContent, CardFooter, CardHeader, CardTitle } from './components/card';
+export { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogOverlay, DialogPortal, DialogTitle, DialogTrigger } from './components/dialog';
 export { Input } from './components/input';
 export { Label } from './components/label';
+export { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectScrollDownButton, SelectScrollUpButton, SelectSeparator, SelectTrigger, SelectValue } from './components/select';
 export { Separator } from './components/separator';
+export { Skeleton } from './components/skeleton';
+export { Table, TableBody, TableCaption, TableCell, TableFooter, TableHead, TableHeader, TableRow } from './components/table';
+export { toast } from './components/toast';
+export { Toaster } from './components/toaster';
 export { cn } from './utils/cn';

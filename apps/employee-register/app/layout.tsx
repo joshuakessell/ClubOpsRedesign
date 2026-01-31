@@ -1,5 +1,6 @@
 import './globals.css';
 import { Space_Grotesk } from 'next/font/google';
+import { AppProviders } from './components/app-providers';
 
 const spaceGrotesk = Space_Grotesk({ subsets: ['latin'], variable: '--font-space' });
 
@@ -16,7 +17,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={spaceGrotesk.variable}>
       <body className="min-h-screen font-[var(--font-space)]">
-        {children}
+        <AppProviders>{children}</AppProviders>
       </body>
     </html>
   );
