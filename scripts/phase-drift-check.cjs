@@ -18,7 +18,25 @@ const forbiddenSegments = new Set([
   'telemetry',
   'websocket',
   'websockets',
-  'gateway',
+]);
+
+const allowedDomains = new Set([
+  'auth-staff',
+  'staff',
+  'devices',
+  'register-sessions',
+  'audit',
+  'inventory',
+  'keys',
+  'cleaning',
+  'customers',
+  'visits',
+  'agreements',
+  'assignments',
+  'waitlist',
+  'holds',
+  'upgrades',
+  'checkout',
 ]);
 
 function walk(dir) {
@@ -51,6 +69,20 @@ function findForbiddenPaths() {
     }
   }
   return violations;
+}
+
+function findUnexpectedDomains() {
+  const domainsDir = path.join(apiSrc, 'domains');
+  if (!fs.existsSync(domainsDir)) return [];
+  const entries = fs.readdirSync(domainsDir, { withFileTypes: true });
+  const unexpected = [];
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    if (!allowedDomains.has(entry.name)) {
+      unexpected.push(entry.name);
+    }
+  }
+  return unexpected;
 }
 
 function readOpenapiPaths() {
@@ -153,9 +185,10 @@ function checkOpenapiCoverage() {
 
 function main() {
   const forbidden = findForbiddenPaths();
+  const unexpectedDomains = findUnexpectedDomains();
   const { missing, extras } = checkOpenapiCoverage();
 
-  if (forbidden.length === 0 && missing.length === 0 && extras.length === 0) {
+  if (forbidden.length === 0 && unexpectedDomains.length === 0 && missing.length === 0 && extras.length === 0) {
     console.log('Phase drift check passed.');
     return;
   }
@@ -164,6 +197,13 @@ function main() {
     console.error('Forbidden domains detected in services/api/src:');
     for (const item of forbidden) {
       console.error(`- ${item}`);
+    }
+  }
+
+  if (unexpectedDomains.length > 0) {
+    console.error('Unexpected domain folders found in services/api/src/domains:');
+    for (const name of unexpectedDomains) {
+      console.error(`- ${name}`);
     }
   }
 

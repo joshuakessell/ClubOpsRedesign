@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../../platform/database/database.service';
 import { VisitsRepository } from './visits.repository';
 import type { VisitDto } from './dto/visit.dto';
-import type { Selectable } from 'kysely';
+import type { Kysely, Selectable } from 'kysely';
 import type { Database } from '../../platform/database/database.types';
 
 @Injectable()
@@ -12,8 +12,8 @@ export class VisitsReadService {
     private readonly visitsRepository: VisitsRepository
   ) {}
 
-  async findById(id: string) {
-    return this.visitsRepository.findById(this.databaseService.client, id);
+  async findById(id: string, db?: Kysely<Database>) {
+    return this.visitsRepository.findById(db ?? this.databaseService.client, id);
   }
 
   async findDtoById(id: string): Promise<VisitDto | null> {

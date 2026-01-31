@@ -44,23 +44,30 @@ describe('holds', () => {
       kind: 'register',
       token: 'device-token-hold',
     });
-    await seedCustomer({ firstName: 'Hold', lastName: 'Guest' });
+    const customer = await seedCustomer({ firstName: 'Hold', lastName: 'Guest' });
     const item = await seedInventoryItem({ type: 'room', name: '501', status: 'AVAILABLE' });
 
     const sessionToken = await loginPin(app, device, staff.identifier, staff.pin);
     const expiresAt = new Date(Date.now() + 60_000).toISOString();
 
+    const waitlistRes = await http
+      .post('/v1/waitlist')
+      .set(authHeaders(device, sessionToken))
+      .send({ customerId: customer.id, requestedType: 'room' });
+
+    expect(waitlistRes.status).toBe(201);
+
     const first = await http
       .post('/v1/holds')
       .set(authHeaders(device, sessionToken))
-      .send({ inventoryItemId: item.id, expiresAt });
+      .send({ inventoryItemId: item.id, waitlistEntryId: waitlistRes.body.id, expiresAt });
 
     expect(first.status).toBe(201);
 
     const second = await http
       .post('/v1/holds')
       .set(authHeaders(device, sessionToken))
-      .send({ inventoryItemId: item.id, expiresAt });
+      .send({ inventoryItemId: item.id, waitlistEntryId: waitlistRes.body.id, expiresAt });
 
     expect(second.status).toBe(409);
     expect(second.body.code).toBe('HOLD_CONFLICT');
@@ -78,15 +85,23 @@ describe('holds', () => {
       kind: 'register',
       token: 'device-token-hold2',
     });
+    const customer = await seedCustomer({ firstName: 'Hold', lastName: 'Expiry' });
     const item = await seedInventoryItem({ type: 'locker', name: '601', status: 'AVAILABLE' });
 
     const sessionToken = await loginPin(app, device, staff.identifier, staff.pin);
     const expiresAt = new Date(Date.now() + 1000).toISOString();
 
+    const waitlistRes = await http
+      .post('/v1/waitlist')
+      .set(authHeaders(device, sessionToken))
+      .send({ customerId: customer.id, requestedType: 'locker' });
+
+    expect(waitlistRes.status).toBe(201);
+
     const first = await http
       .post('/v1/holds')
       .set(authHeaders(device, sessionToken))
-      .send({ inventoryItemId: item.id, expiresAt });
+      .send({ inventoryItemId: item.id, waitlistEntryId: waitlistRes.body.id, expiresAt });
 
     expect(first.status).toBe(201);
 
@@ -96,7 +111,7 @@ describe('holds', () => {
     const second = await http
       .post('/v1/holds')
       .set(authHeaders(device, sessionToken))
-      .send({ inventoryItemId: item.id, expiresAt: secondExpires });
+      .send({ inventoryItemId: item.id, waitlistEntryId: waitlistRes.body.id, expiresAt: secondExpires });
 
     expect(second.status).toBe(201);
 

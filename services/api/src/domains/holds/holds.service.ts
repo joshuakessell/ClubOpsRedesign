@@ -3,6 +3,8 @@ import { DatabaseService } from '../../platform/database/database.service';
 import { AuditService } from '../audit/audit.service';
 import { AssignmentsService } from '../assignments/assignments.service';
 import { InventoryService } from '../inventory/inventory.service';
+import { VisitsReadService } from '../visits/visits.read.service';
+import { WaitlistReadService } from '../waitlist/waitlist.read.service';
 import { HoldsRepository } from './holds.repository';
 import type { CreateHoldRequestDto } from './dto/hold-requests.dto';
 import type { HoldDto } from './dto/hold.dto';
@@ -18,6 +20,8 @@ export class HoldsService {
     private readonly holdsRepository: HoldsRepository,
     private readonly inventoryService: InventoryService,
     private readonly assignmentsService: AssignmentsService,
+    private readonly visitsReadService: VisitsReadService,
+    private readonly waitlistReadService: WaitlistReadService,
     private readonly auditService: AuditService
   ) {}
 
@@ -48,6 +52,32 @@ export class HoldsService {
     }
     if (expiresAt.getTime() <= Date.now()) {
       throwValidation('expiresAt must be in the future');
+    }
+
+    const hasVisitId = Boolean(request.visitId);
+    const hasWaitlistId = Boolean(request.waitlistEntryId);
+    if (hasVisitId === hasWaitlistId) {
+      throwValidation('exactly one of visitId or waitlistEntryId is required');
+    }
+
+    if (request.visitId) {
+      const visit = await this.visitsReadService.findById(request.visitId, trx);
+      if (!visit) {
+        throwNotFound('Visit not found', 'VISIT_NOT_FOUND');
+      }
+      if (visit.status !== 'ACTIVE') {
+        throwConflict('Visit is not active', 'HOLD_CONFLICT');
+      }
+    }
+
+    if (request.waitlistEntryId) {
+      const entry = await this.waitlistReadService.findById(request.waitlistEntryId, trx);
+      if (!entry) {
+        throwNotFound('Waitlist entry not found', 'WAITLIST_NOT_FOUND');
+      }
+      if (entry.status !== 'OPEN') {
+        throwConflict('Waitlist entry is not open', 'HOLD_CONFLICT');
+      }
     }
 
     try {
@@ -106,6 +136,42 @@ export class HoldsService {
       }
       throw error;
     }
+  }
+
+  async releaseActiveHoldForInventoryItem(
+    trx: DatabaseService['client'],
+    inventoryItemId: string,
+    actor: { staffId: string; deviceId: string }
+  ) {
+    const existing = await this.holdsRepository.findActiveByInventoryItemForUpdate(trx, inventoryItemId);
+    if (!existing) {
+      return null;
+    }
+
+    const hold = await this.holdsRepository.update(trx, existing.id, {
+      status: 'RELEASED',
+    });
+
+    if (!hold) {
+      return null;
+    }
+
+    await this.auditService.write(
+      {
+        action: 'HOLD_RELEASED',
+        entityType: 'inventory_hold',
+        entityId: hold.id,
+        actorStaffId: actor.staffId,
+        actorDeviceId: actor.deviceId,
+        metadata: {
+          previousStatus: existing.status,
+          source: 'UPGRADE_ACCEPT',
+        },
+      },
+      trx
+    );
+
+    return hold;
   }
 
   async release(

@@ -24,6 +24,19 @@ export class HoldsRepository {
       .executeTakeFirst();
   }
 
+  async findActiveByInventoryItemForUpdate(
+    db: Kysely<Database>,
+    inventoryItemId: string
+  ): Promise<Selectable<Database['inventory_holds']> | undefined> {
+    return db
+      .selectFrom('inventory_holds')
+      .selectAll()
+      .where('inventory_item_id', '=', inventoryItemId)
+      .where('status', '=', 'ACTIVE')
+      .forUpdate()
+      .executeTakeFirst();
+  }
+
   async update(db: Kysely<Database>, id: string, values: Updateable<Database['inventory_holds']>) {
     return db.updateTable('inventory_holds').set(values).where('id', '=', id).returningAll().executeTakeFirst();
   }

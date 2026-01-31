@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../../platform/database/database.service';
 import { WaitlistRepository } from './waitlist.repository';
 import type { WaitlistEntryDto, WaitlistRequestedType, WaitlistStatus } from './dto/waitlist.dto';
-import type { Selectable } from 'kysely';
+import type { Kysely, Selectable } from 'kysely';
 import type { Database } from '../../platform/database/database.types';
 
 @Injectable()
@@ -17,8 +17,8 @@ export class WaitlistReadService {
     return rows.map((row) => this.toDto(row));
   }
 
-  async findById(id: string) {
-    return this.waitlistRepository.findById(this.databaseService.client, id);
+  async findById(id: string, db?: Kysely<Database>) {
+    return this.waitlistRepository.findById(db ?? this.databaseService.client, id);
   }
 
   private toDto(row: Selectable<Database['waitlist_entries']>): WaitlistEntryDto {

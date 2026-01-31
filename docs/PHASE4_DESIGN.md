@@ -90,6 +90,9 @@ Indexes/constraints:
 - Holds:
   - lock inventory row FOR UPDATE
   - ensure no active assignment and no active hold
+  - require exactly one of visitId or waitlistEntryId
+  - if visitId provided, visit must be ACTIVE
+  - if waitlistEntryId provided, waitlist entry must be OPEN
   - create hold
 - Checkout complete:
   - release assignment
@@ -104,5 +107,5 @@ Indexes/constraints:
   - audit, all in one transaction
 
 ## 5) Error handling (Phase 4)
-- New codes: WAITLIST_NOT_FOUND, HOLD_CONFLICT, HOLD_EXPIRED, UPGRADE_NOT_FOUND, UPGRADE_ALREADY_DECIDED, CHECKOUT_ALREADY_COMPLETED
+- New codes: WAITLIST_NOT_FOUND, HOLD_CONFLICT, HOLD_EXPIRED, UPGRADE_NOT_FOUND, UPGRADE_INVALID_FROM, UPGRADE_EXPIRED, UPGRADE_ALREADY_DECIDED, CHECKOUT_ALREADY_COMPLETED
 - Use 409 for conflicts, 404 for missing, 400 for validation

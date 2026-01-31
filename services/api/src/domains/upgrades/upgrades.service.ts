@@ -42,16 +42,21 @@ export class UpgradesService {
 
     try {
       const created = await this.databaseService.transaction(async (trx) => {
-        const visit = await this.visitsService.getByIdForUpdate(trx, request.visitId);
-        if (!visit || visit.status !== 'ACTIVE') {
-          throwNotFound('Visit not found', 'VISIT_NOT_FOUND');
-        }
+      const visit = await this.visitsService.getByIdForUpdate(trx, request.visitId);
+      if (!visit || visit.status !== 'ACTIVE') {
+        throwNotFound('Visit not found', 'VISIT_NOT_FOUND');
+      }
 
-        const offer = await this.upgradesRepository.create(trx, {
-          visit_id: request.visitId,
-          from_inventory_item_id: request.fromInventoryItemId,
-          to_inventory_type: request.toInventoryType,
-          status: 'PENDING',
+      const assignment = await this.assignmentsService.findActiveByVisit(trx, request.visitId);
+      if (!assignment || assignment.inventory_item_id !== request.fromInventoryItemId) {
+        throwConflict('Upgrade offer must reference current assignment', 'UPGRADE_INVALID_FROM');
+      }
+
+      const offer = await this.upgradesRepository.create(trx, {
+        visit_id: request.visitId,
+        from_inventory_item_id: request.fromInventoryItemId,
+        to_inventory_type: request.toInventoryType,
+        status: 'PENDING',
           expires_at: expiresAt,
           created_at: new Date(),
         });
@@ -92,8 +97,39 @@ export class UpgradesService {
       if (!offer) {
         throwNotFound('Upgrade offer not found', 'UPGRADE_NOT_FOUND');
       }
+      if (offer.status === 'EXPIRED') {
+        throwConflict('Upgrade offer expired', 'UPGRADE_EXPIRED');
+      }
       if (offer.status !== 'PENDING') {
         throwConflict('Upgrade offer already decided', 'UPGRADE_ALREADY_DECIDED');
+      }
+      if (offer.expires_at.getTime() <= Date.now()) {
+        const expired = await this.upgradesRepository.update(trx, offer.id, {
+          status: 'EXPIRED',
+        });
+
+        if (expired) {
+          await this.auditService.write(
+            {
+              action: 'UPGRADE_EXPIRED',
+              entityType: 'upgrade_offer',
+              entityId: offer.id,
+              actorStaffId: actor.staffId,
+              actorDeviceId: actor.deviceId,
+              metadata: {
+                visitId: offer.visit_id,
+              },
+            },
+            trx
+          );
+        }
+
+        throwConflict('Upgrade offer expired', 'UPGRADE_EXPIRED');
+      }
+
+      const currentAssignment = await this.assignmentsService.findActiveByVisit(trx, offer.visit_id);
+      if (!currentAssignment || currentAssignment.inventory_item_id !== offer.from_inventory_item_id) {
+        throwConflict('Upgrade offer no longer matches current assignment', 'UPGRADE_INVALID_FROM');
       }
 
       const targetItem = await this.inventoryService.findAvailableByTypeForUpdate(
@@ -113,11 +149,6 @@ export class UpgradesService {
         },
         actor
       );
-
-      const currentAssignment = await this.assignmentsService.findActiveByVisit(trx, offer.visit_id);
-      if (!currentAssignment) {
-        throwConflict('Visit has no active assignment', 'HOLD_CONFLICT');
-      }
 
       await this.inventoryService.transitionStatus(trx, currentAssignment.inventory_item_id, 'DIRTY', {
         actorStaffId: actor.staffId,
@@ -142,6 +173,8 @@ export class UpgradesService {
       const next = await this.upgradesRepository.update(trx, offer.id, {
         status: 'ACCEPTED',
       });
+
+      await this.holdsService.releaseActiveHoldForInventoryItem(trx, targetItem.id, actor);
 
       await this.auditService.write(
         {
@@ -172,8 +205,34 @@ export class UpgradesService {
       if (!offer) {
         throwNotFound('Upgrade offer not found', 'UPGRADE_NOT_FOUND');
       }
+      if (offer.status === 'EXPIRED') {
+        throwConflict('Upgrade offer expired', 'UPGRADE_EXPIRED');
+      }
       if (offer.status !== 'PENDING') {
         throwConflict('Upgrade offer already decided', 'UPGRADE_ALREADY_DECIDED');
+      }
+      if (offer.expires_at.getTime() <= Date.now()) {
+        const expired = await this.upgradesRepository.update(trx, offer.id, {
+          status: 'EXPIRED',
+        });
+
+        if (expired) {
+          await this.auditService.write(
+            {
+              action: 'UPGRADE_EXPIRED',
+              entityType: 'upgrade_offer',
+              entityId: offer.id,
+              actorStaffId: actor.staffId,
+              actorDeviceId: actor.deviceId,
+              metadata: {
+                visitId: offer.visit_id,
+              },
+            },
+            trx
+          );
+        }
+
+        throwConflict('Upgrade offer expired', 'UPGRADE_EXPIRED');
       }
 
       const next = await this.upgradesRepository.update(trx, offer.id, {
