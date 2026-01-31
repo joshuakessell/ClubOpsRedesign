@@ -4,6 +4,7 @@ info:
   version: 0.1.0
   license:
     name: UNLICENSED
+    url: https://example.com/UNLICENSED
   description: |
     Phase 1 scope: staff PIN auth, device allowlist, register sessions (lifecycle + heartbeat + TTL), admin force sign-out, audit writes.
 
@@ -47,6 +48,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HealthResponse'
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
         '500':
           $ref: '#/components/responses/ErrorResponse'
 
