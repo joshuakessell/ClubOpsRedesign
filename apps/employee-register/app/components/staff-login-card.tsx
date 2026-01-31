@@ -28,8 +28,8 @@ export function StaffLoginCard({
         const result = await fetchStaffList(device);
         if (!mounted) return;
         setStaffList(result.staff);
-        if (!selectedIdentifier && result.staff.length > 0) {
-          setSelectedIdentifier(result.staff[0].identifier);
+        if (result.staff.length > 0) {
+          setSelectedIdentifier((current) => current || result.staff[0].identifier);
         }
         setStatus('idle');
       } catch (err) {
