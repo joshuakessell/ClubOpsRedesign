@@ -26,22 +26,22 @@ export function throwHttpError(
   throw new HttpException(errorResponse(error, message, code), status);
 }
 
-export function throwUnauthorized(message: string, code: ErrorCode) {
+export function throwUnauthorized(message: string, code: ErrorCode): never {
   throwHttpError(HttpStatus.UNAUTHORIZED, 'Unauthorized', message, code);
 }
 
-export function throwForbidden(message: string, code: ErrorCode) {
+export function throwForbidden(message: string, code: ErrorCode): never {
   throwHttpError(HttpStatus.FORBIDDEN, 'Forbidden', message, code);
 }
 
-export function throwValidation(message: string) {
+export function throwValidation(message: string): never {
   throwHttpError(HttpStatus.BAD_REQUEST, 'Bad Request', message, 'VALIDATION_ERROR');
 }
 
-export function throwNotFound(message: string, code: ErrorCode) {
+export function throwNotFound(message: string, code: ErrorCode): never {
   throwHttpError(HttpStatus.NOT_FOUND, 'Not Found', message, code);
 }
 
-export function throwConflict(message: string, code: ErrorCode) {
+export function throwConflict(message: string, code: ErrorCode): never {
   throwHttpError(HttpStatus.CONFLICT, 'Conflict', message, code);
 }

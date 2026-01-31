@@ -22,13 +22,14 @@ export class RegisterSessionsService {
   ) {}
 
   async getAvailability(): Promise<RegisterAvailabilityResponseDto> {
+    const registerNumbers: RegisterNumber[] = [1, 2, 3];
     const active = await this.registerSessionsRepository.listActiveByRegisters(
       this.databaseService.client,
-      [1, 2, 3]
+      registerNumbers
     );
     const activeMap = new Map(active.map((session) => [session.register_number, session.id]));
     return {
-      registers: [1, 2, 3].map((registerNumber) => ({
+      registers: registerNumbers.map((registerNumber) => ({
         registerNumber,
         available: !activeMap.has(registerNumber),
         activeSessionId: activeMap.get(registerNumber) ?? null,
@@ -299,12 +300,13 @@ export class RegisterSessionsService {
   }
 
   async listAdminSlots() {
+    const registerNumbers: RegisterNumber[] = [1, 2, 3];
     const active = await this.registerSessionsRepository.listActiveByRegisters(
       this.databaseService.client,
-      [1, 2, 3]
+      registerNumbers
     );
     const activeMap = new Map(active.map((session) => [session.register_number, session]));
-    return [1, 2, 3].map((registerNumber) => ({
+    return registerNumbers.map((registerNumber) => ({
       registerNumber,
       session: activeMap.has(registerNumber) ? this.toDto(activeMap.get(registerNumber)!) : null,
     }));

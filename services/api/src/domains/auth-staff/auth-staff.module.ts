@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { DatabaseModule } from '../../platform/database/database.module';
 import { ConfigModule } from '../../platform/config/config.module';
 import { StaffModule } from '../staff/staff.module';
@@ -8,6 +8,7 @@ import { StaffSessionsRepository } from './staff-sessions.repository';
 import { StaffAuthGuard } from './guards/staff-auth.guard';
 import { AdminGuard } from './guards/admin.guard';
 
+@Global()
 @Module({
   imports: [DatabaseModule, StaffModule, ConfigModule],
   controllers: [AuthStaffController],

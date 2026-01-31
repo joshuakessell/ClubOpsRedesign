@@ -5,8 +5,7 @@ import { DatabaseService } from './database.service';
 import { ConfigModule } from '../config/config.module';
 import { ConfigService } from '../config/config.service';
 import type { Database } from './database.types';
-
-export const KYSELY_PROVIDER = 'KYSELY_PROVIDER';
+import { KYSELY_PROVIDER } from './database.constants';
 
 @Module({
   imports: [ConfigModule],

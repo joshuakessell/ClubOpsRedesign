@@ -1,0 +1,1 @@
+export const KYSELY_PROVIDER = 'KYSELY_PROVIDER';
