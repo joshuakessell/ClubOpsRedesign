@@ -38,7 +38,15 @@ export class VisitOrchestratorService {
           throwNotFound('Visit not found', 'VISIT_NOT_FOUND');
         }
 
-        const { updated: inventoryItem, fromStatus } = await this.inventoryService.transitionStatus(
+        const currentItem = await this.inventoryService.findByIdForUpdate(trx, inventoryItemId);
+        if (!currentItem) {
+          throwNotFound('Inventory item not found', 'INVENTORY_NOT_FOUND');
+        }
+        if (currentItem.status !== 'AVAILABLE') {
+          throwConflict('Inventory item is not available', 'INVENTORY_UNAVAILABLE_FOR_ASSIGNMENT');
+        }
+
+        const { updated: inventoryItem } = await this.inventoryService.transitionStatus(
           trx,
           inventoryItemId,
           'OCCUPIED',
@@ -49,10 +57,6 @@ export class VisitOrchestratorService {
             source: 'VISIT_ASSIGNMENT',
           }
         );
-
-        if (fromStatus !== 'AVAILABLE') {
-          throwConflict('Inventory item is not available', 'INVENTORY_UNAVAILABLE_FOR_ASSIGNMENT');
-        }
 
         const created = await this.assignmentsService.create(trx, visit.id, inventoryItemId);
 

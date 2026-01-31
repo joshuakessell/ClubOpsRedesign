@@ -7,7 +7,7 @@ import type { AssignVisitRequestDto, OpenVisitRequestDto, RenewVisitRequestDto }
 import type { VisitAssignmentDto, VisitDto, VisitNullableResponseDto } from './dto/visit.dto';
 import type { Request } from 'express';
 import type { RequestContext } from '../../platform/http/request-context';
-import { throwUnauthorized } from '../../platform/http/errors';
+import { throwUnauthorized, throwValidation } from '../../platform/http/errors';
 
 @Controller('v1/visits')
 export class VisitsController {
@@ -19,7 +19,10 @@ export class VisitsController {
   @Get('active')
   @UseGuards(DeviceAuthGuard, StaffAuthGuard)
   async active(@Query('customerId') customerId?: string): Promise<VisitNullableResponseDto> {
-    const visit = await this.visitsService.getActiveByCustomerId(customerId ?? '');
+    if (!customerId || customerId.trim().length === 0) {
+      throwValidation('customerId is required');
+    }
+    const visit = await this.visitsService.getActiveByCustomerId(customerId.trim());
     return { visit };
   }
 
