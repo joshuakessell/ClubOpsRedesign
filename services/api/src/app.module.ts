@@ -21,6 +21,7 @@ import { HoldsModule } from './domains/holds/holds.module';
 import { UpgradesModule } from './domains/upgrades/upgrades.module';
 import { CheckoutModule } from './domains/checkout/checkout.module';
 import { AdminModule } from './application/admin/admin.module';
+import { OrchestrationModule } from './application/orchestration/orchestration.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { AdminModule } from './application/admin/admin.module';
     UpgradesModule,
     CheckoutModule,
     AdminModule,
+    OrchestrationModule,
   ],
 })
 export class AppModule {}

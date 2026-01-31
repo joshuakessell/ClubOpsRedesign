@@ -1,7 +1,7 @@
 import { Body, Controller, HttpCode, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { DeviceAuthGuard } from '../../platform/auth-device/device-auth.guard';
 import { StaffAuthGuard } from '../auth-staff/guards/staff-auth.guard';
-import { UpgradesService } from './upgrades.service';
+import { UpgradesOrchestratorService } from '../../application/orchestration/upgrades-orchestrator.service';
 import type { CreateUpgradeOfferRequestDto } from './dto/upgrade-requests.dto';
 import type { UpgradeOfferDto } from './dto/upgrade.dto';
 import type { Request } from 'express';
@@ -10,7 +10,7 @@ import { throwUnauthorized } from '../../platform/http/errors';
 
 @Controller('v1/upgrades')
 export class UpgradesController {
-  constructor(private readonly upgradesService: UpgradesService) {}
+  constructor(private readonly upgradesOrchestrator: UpgradesOrchestratorService) {}
 
   @Post('offer')
   @UseGuards(DeviceAuthGuard, StaffAuthGuard)
@@ -21,7 +21,7 @@ export class UpgradesController {
     if (!req.staffSession || !req.device) {
       throwUnauthorized('Staff session or device context missing', 'STAFF_UNAUTHORIZED');
     }
-    return this.upgradesService.createOffer(body, {
+    return this.upgradesOrchestrator.createOffer(body, {
       staffId: req.staffSession.staffId,
       deviceId: req.device.id,
     });
@@ -34,7 +34,7 @@ export class UpgradesController {
     if (!req.staffSession || !req.device) {
       throwUnauthorized('Staff session or device context missing', 'STAFF_UNAUTHORIZED');
     }
-    return this.upgradesService.accept(id, {
+    return this.upgradesOrchestrator.accept(id, {
       staffId: req.staffSession.staffId,
       deviceId: req.device.id,
     });
@@ -47,7 +47,7 @@ export class UpgradesController {
     if (!req.staffSession || !req.device) {
       throwUnauthorized('Staff session or device context missing', 'STAFF_UNAUTHORIZED');
     }
-    return this.upgradesService.decline(id, {
+    return this.upgradesOrchestrator.decline(id, {
       staffId: req.staffSession.staffId,
       deviceId: req.device.id,
     });

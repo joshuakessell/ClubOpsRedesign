@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "scripts": {
-    "dev": "tsx watch src/main.ts",
+    "dev": "node --watch -r ts-node/register src/main.ts",
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/main.js",
     "db:migrate": "tsx scripts/db-migrate.ts",
@@ -32,6 +32,7 @@
     "dotenv": "^16.4.5",
     "jest": "^29.7.0",
     "supertest": "^6.3.4",
+    "ts-node": "^10.9.2",
     "tsx": "^4.19.2",
     "ts-jest": "^29.2.5",
     "typescript": "^5.5.4"

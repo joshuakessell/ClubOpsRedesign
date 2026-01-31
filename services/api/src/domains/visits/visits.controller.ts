@@ -1,8 +1,7 @@
 import { Body, Controller, Get, HttpCode, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { DeviceAuthGuard } from '../../platform/auth-device/device-auth.guard';
 import { StaffAuthGuard } from '../auth-staff/guards/staff-auth.guard';
-import { VisitsService } from './visits.service';
-import { VisitOrchestratorService } from './visit-orchestrator.service';
+import { VisitLifecycleService } from '../../application/orchestration/visit-lifecycle.service';
 import type { AssignVisitRequestDto, OpenVisitRequestDto, RenewVisitRequestDto } from './dto/visit-requests.dto';
 import type { VisitAssignmentDto, VisitDto, VisitNullableResponseDto } from './dto/visit.dto';
 import type { Request } from 'express';
@@ -11,10 +10,7 @@ import { throwUnauthorized, throwValidation } from '../../platform/http/errors';
 
 @Controller('v1/visits')
 export class VisitsController {
-  constructor(
-    private readonly visitsService: VisitsService,
-    private readonly visitOrchestrator: VisitOrchestratorService
-  ) {}
+  constructor(private readonly visitLifecycle: VisitLifecycleService) {}
 
   @Get('active')
   @UseGuards(DeviceAuthGuard, StaffAuthGuard)
@@ -22,8 +18,7 @@ export class VisitsController {
     if (!customerId || customerId.trim().length === 0) {
       throwValidation('customerId is required');
     }
-    const visit = await this.visitsService.getActiveByCustomerId(customerId.trim());
-    return { visit };
+    return this.visitLifecycle.getActive(customerId.trim());
   }
 
   @Post('open')
@@ -35,7 +30,7 @@ export class VisitsController {
     if (!req.staffSession || !req.device) {
       throwUnauthorized('Staff session or device context missing', 'STAFF_UNAUTHORIZED');
     }
-    return this.visitsService.open(body, {
+    return this.visitLifecycle.open(body, {
       staffId: req.staffSession.staffId,
       deviceId: req.device.id,
     });
@@ -52,7 +47,7 @@ export class VisitsController {
     if (!req.staffSession || !req.device) {
       throwUnauthorized('Staff session or device context missing', 'STAFF_UNAUTHORIZED');
     }
-    return this.visitsService.renew(id, body, {
+    return this.visitLifecycle.renew(id, body, {
       staffId: req.staffSession.staffId,
       deviceId: req.device.id,
     });
@@ -69,7 +64,7 @@ export class VisitsController {
     if (!req.staffSession || !req.device) {
       throwUnauthorized('Staff session or device context missing', 'STAFF_UNAUTHORIZED');
     }
-    return this.visitOrchestrator.assignInventory(id, body.inventoryItemId, {
+    return this.visitLifecycle.assignInventory(id, body, {
       staffId: req.staffSession.staffId,
       deviceId: req.device.id,
       role: req.staffSession.role,
@@ -86,7 +81,7 @@ export class VisitsController {
     if (!req.staffSession || !req.device) {
       throwUnauthorized('Staff session or device context missing', 'STAFF_UNAUTHORIZED');
     }
-    return this.visitOrchestrator.closeVisit(id, {
+    return this.visitLifecycle.closeVisit(id, {
       staffId: req.staffSession.staffId,
       deviceId: req.device.id,
       role: req.staffSession.role,

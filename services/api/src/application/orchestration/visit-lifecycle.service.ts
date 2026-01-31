@@ -1,44 +1,61 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../../platform/database/database.service';
-import { AuditService } from '../audit/audit.service';
-import { AssignmentsService } from '../assignments/assignments.service';
-import { InventoryService } from '../inventory/inventory.service';
-import { VisitsRepository } from './visits.repository';
+import { AuditService } from '../../domains/audit/audit.service';
+import { AssignmentsService } from '../../domains/assignments/assignments.service';
+import { InventoryService } from '../../domains/inventory/inventory.service';
+import { VisitsService } from '../../domains/visits/visits.service';
+import type { AssignVisitRequestDto, OpenVisitRequestDto, RenewVisitRequestDto } from '../../domains/visits/dto/visit-requests.dto';
+import type { VisitAssignmentDto, VisitDto, VisitNullableResponseDto } from '../../domains/visits/dto/visit.dto';
 import { throwConflict, throwNotFound, throwValidation } from '../../platform/http/errors';
 import { isUniqueViolation } from '../../platform/database/pg-errors';
-import type { VisitAssignmentDto, VisitDto } from './dto/visit.dto';
-import { VisitsService } from './visits.service';
-import type { Selectable } from 'kysely';
-import type { Database } from '../../platform/database/database.types';
 
 @Injectable()
-export class VisitOrchestratorService {
+export class VisitLifecycleService {
   constructor(
     private readonly databaseService: DatabaseService,
-    private readonly visitsRepository: VisitsRepository,
     private readonly visitsService: VisitsService,
     private readonly assignmentsService: AssignmentsService,
     private readonly inventoryService: InventoryService,
     private readonly auditService: AuditService
   ) {}
 
+  async open(
+    request: OpenVisitRequestDto,
+    actor: { staffId: string; deviceId: string }
+  ): Promise<VisitDto> {
+    return this.visitsService.open(request, actor);
+  }
+
+  async renew(
+    visitId: string,
+    request: RenewVisitRequestDto,
+    actor: { staffId: string; deviceId: string }
+  ): Promise<VisitDto> {
+    return this.visitsService.renew(visitId, request, actor);
+  }
+
+  async getActive(customerId: string): Promise<VisitNullableResponseDto> {
+    const visit = await this.visitsService.getActiveByCustomerId(customerId);
+    return { visit };
+  }
+
   async assignInventory(
     visitId: string,
-    inventoryItemId: string,
+    request: AssignVisitRequestDto,
     actor: { staffId: string; deviceId: string; role: 'staff' | 'admin' }
   ): Promise<VisitAssignmentDto> {
-    if (!inventoryItemId) {
+    if (!request.inventoryItemId) {
       throwValidation('inventoryItemId is required');
     }
 
     try {
       const assignment = await this.databaseService.transaction(async (trx) => {
-        const visit = await this.visitsRepository.findByIdForUpdate(trx, visitId);
+        const visit = await this.visitsService.getByIdForUpdate(trx, visitId);
         if (!visit || visit.status !== 'ACTIVE') {
           throwNotFound('Visit not found', 'VISIT_NOT_FOUND');
         }
 
-        const currentItem = await this.inventoryService.findByIdForUpdate(trx, inventoryItemId);
+        const currentItem = await this.inventoryService.findByIdForUpdate(trx, request.inventoryItemId);
         if (!currentItem) {
           throwNotFound('Inventory item not found', 'INVENTORY_NOT_FOUND');
         }
@@ -48,7 +65,7 @@ export class VisitOrchestratorService {
 
         const { updated: inventoryItem } = await this.inventoryService.transitionStatus(
           trx,
-          inventoryItemId,
+          request.inventoryItemId,
           'OCCUPIED',
           {
             actorStaffId: actor.staffId,
@@ -58,7 +75,7 @@ export class VisitOrchestratorService {
           }
         );
 
-        const created = await this.assignmentsService.create(trx, visit.id, inventoryItemId);
+        const created = await this.assignmentsService.create(trx, visit.id, request.inventoryItemId);
 
         await this.auditService.write(
           {
@@ -90,8 +107,8 @@ export class VisitOrchestratorService {
     visitId: string,
     actor: { staffId: string; deviceId: string; role: 'staff' | 'admin' }
   ): Promise<VisitDto> {
-    const closed: Selectable<Database['visits']> = await this.databaseService.transaction(async (trx) => {
-      const visit = await this.visitsRepository.findByIdForUpdate(trx, visitId);
+    const closed = await this.databaseService.transaction(async (trx) => {
+      const visit = await this.visitsService.getByIdForUpdate(trx, visitId);
       if (!visit) {
         throwNotFound('Visit not found', 'VISIT_NOT_FOUND');
       }

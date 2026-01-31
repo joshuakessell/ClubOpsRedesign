@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { Inject, Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { RegisterSessionTtlJob } from './register-session-ttl.job';
 
 @Injectable()
@@ -7,7 +7,9 @@ export class JobsRunner implements OnModuleInit, OnModuleDestroy {
   private isRunning = false;
   private readonly logger = new Logger(JobsRunner.name);
 
-  constructor(private readonly registerSessionTtlJob: RegisterSessionTtlJob) {}
+  constructor(
+    @Inject(RegisterSessionTtlJob) private readonly registerSessionTtlJob: RegisterSessionTtlJob
+  ) {}
 
   onModuleInit() {
     void this.runRegisterSessionTtl();

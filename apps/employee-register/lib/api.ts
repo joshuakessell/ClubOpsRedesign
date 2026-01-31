@@ -15,6 +15,9 @@ export type RegisterSessionNullableResponse =
   components['schemas']['RegisterSessionNullableResponse'];
 export type CustomerListResponse = components['schemas']['CustomerListResponse'];
 export type CustomerDto = components['schemas']['CustomerDTO'];
+export type VisitDto = components['schemas']['VisitDTO'];
+export type VisitNullableResponse = components['schemas']['VisitNullableResponse'];
+export type OpenVisitRequest = components['schemas']['OpenVisitRequest'];
 
 function client(device?: DeviceAuth, staffToken?: string) {
   return createApiClient({
@@ -123,6 +126,67 @@ export async function searchCustomers(
   })) as CustomerListResponse | undefined;
   if (!response) {
     throw new Error('No customer search response returned.');
+  }
+  return response;
+}
+
+export async function getActiveVisit(
+  device: DeviceAuth,
+  staffToken: string,
+  customerId: string
+): Promise<VisitDto | null> {
+  const api = client(device, staffToken);
+  const response = (await api.request('/visits/active', 'get', {
+    query: { customerId },
+  })) as VisitNullableResponse | undefined;
+  if (!response) {
+    throw new Error('No visit response returned.');
+  }
+  return response.visit ?? null;
+}
+
+export async function openVisit(
+  device: DeviceAuth,
+  staffToken: string,
+  customerId: OpenVisitRequest['customerId']
+): Promise<VisitDto> {
+  const api = client(device, staffToken);
+  const response = (await api.request('/visits/open', 'post', {
+    body: { customerId },
+  })) as VisitDto | undefined;
+  if (!response) {
+    throw new Error('No visit response returned.');
+  }
+  return response;
+}
+
+export async function heartbeatRegisterSession(
+  device: DeviceAuth,
+  staffToken: string,
+  sessionId: string
+): Promise<RegisterSessionDto> {
+  const api = client(device, staffToken);
+  const response = (await api.request('/register-sessions/{id}/heartbeat', 'post', {
+    pathParams: { id: sessionId },
+  })) as RegisterSessionDto | undefined;
+  if (!response) {
+    throw new Error('No heartbeat response returned.');
+  }
+  return response;
+}
+
+export async function closeRegisterSession(
+  device: DeviceAuth,
+  staffToken: string,
+  sessionId: string
+): Promise<RegisterSessionDto> {
+  const api = client(device, staffToken);
+  const response = (await api.request('/register-sessions/{id}/close', 'post', {
+    pathParams: { id: sessionId },
+    body: { reason: 'SHIFT_END' },
+  })) as RegisterSessionDto | undefined;
+  if (!response) {
+    throw new Error('No close response returned.');
   }
   return response;
 }

@@ -1,7 +1,7 @@
 import { Body, Controller, HttpCode, Post, Req, UseGuards } from '@nestjs/common';
 import { DeviceAuthGuard } from '../../platform/auth-device/device-auth.guard';
 import { StaffAuthGuard } from '../auth-staff/guards/staff-auth.guard';
-import { CleaningService } from './cleaning.service';
+import { CleaningOrchestratorService } from '../../application/orchestration/cleaning-orchestrator.service';
 import type { CleaningBatchRequestDto, CleaningBatchResponseDto } from './dto/cleaning.dto';
 import type { Request } from 'express';
 import type { RequestContext } from '../../platform/http/request-context';
@@ -9,7 +9,7 @@ import { throwUnauthorized } from '../../platform/http/errors';
 
 @Controller('v1/cleaning')
 export class CleaningController {
-  constructor(private readonly cleaningService: CleaningService) {}
+  constructor(private readonly cleaningOrchestrator: CleaningOrchestratorService) {}
 
   @Post('batch')
   @UseGuards(DeviceAuthGuard, StaffAuthGuard)
@@ -21,7 +21,7 @@ export class CleaningController {
     if (!req.staffSession || !req.device) {
       throwUnauthorized('Staff session or device context missing', 'STAFF_UNAUTHORIZED');
     }
-    return this.cleaningService.createBatch(body, {
+    return this.cleaningOrchestrator.createBatch(body, {
       staffId: req.staffSession.staffId,
       deviceId: req.device.id,
       role: req.staffSession.role,

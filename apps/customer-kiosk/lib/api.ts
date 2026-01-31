@@ -61,3 +61,20 @@ export async function captureAgreementBypass(
   }
   return response;
 }
+
+export async function captureAgreementSigned(
+  device: DeviceAuth,
+  staffToken: string,
+  visitId: string,
+  metadata: Record<string, string>
+): Promise<AgreementDto> {
+  const api = client(device, staffToken);
+  const response = (await api.request('/agreements/{visitId}/capture', 'post', {
+    pathParams: { visitId },
+    body: { status: 'SIGNED', method: 'KIOSK', metadata },
+  })) as AgreementDto | undefined;
+  if (!response) {
+    throw new Error('No agreement response returned.');
+  }
+  return response;
+}

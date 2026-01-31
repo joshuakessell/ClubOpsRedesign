@@ -1,34 +1,25 @@
 import { Injectable } from '@nestjs/common';
-import { DatabaseService } from '../../platform/database/database.service';
+import type { Kysely, Selectable } from 'kysely';
+import type { Database } from '../../platform/database/database.types';
 import { AuditService } from '../audit/audit.service';
-import { HoldsService } from '../holds/holds.service';
-import { AssignmentsService } from '../assignments/assignments.service';
-import { InventoryService } from '../inventory/inventory.service';
-import { VisitsService } from '../visits/visits.service';
 import { UpgradesRepository } from './upgrades.repository';
 import type { CreateUpgradeOfferRequestDto } from './dto/upgrade-requests.dto';
 import type { UpgradeOfferDto, UpgradeStatus } from './dto/upgrade.dto';
 import { throwConflict, throwNotFound, throwValidation } from '../../platform/http/errors';
 import { isUniqueViolation } from '../../platform/database/pg-errors';
-import type { Selectable } from 'kysely';
-import type { Database } from '../../platform/database/database.types';
 
 @Injectable()
 export class UpgradesService {
   constructor(
-    private readonly databaseService: DatabaseService,
     private readonly upgradesRepository: UpgradesRepository,
-    private readonly visitsService: VisitsService,
-    private readonly holdsService: HoldsService,
-    private readonly assignmentsService: AssignmentsService,
-    private readonly inventoryService: InventoryService,
     private readonly auditService: AuditService
   ) {}
 
-  async createOffer(
+  async createOfferInTransaction(
+    db: Kysely<Database>,
     request: CreateUpgradeOfferRequestDto,
     actor: { staffId: string; deviceId: string }
-  ): Promise<UpgradeOfferDto> {
+  ): Promise<Selectable<Database['upgrade_offers']>> {
     if (!request.visitId || !request.fromInventoryItemId) {
       throwValidation('visitId and fromInventoryItemId are required');
     }
@@ -41,45 +32,31 @@ export class UpgradesService {
     }
 
     try {
-      const created = await this.databaseService.transaction(async (trx) => {
-      const visit = await this.visitsService.getByIdForUpdate(trx, request.visitId);
-      if (!visit || visit.status !== 'ACTIVE') {
-        throwNotFound('Visit not found', 'VISIT_NOT_FOUND');
-      }
-
-      const assignment = await this.assignmentsService.findActiveByVisit(trx, request.visitId);
-      if (!assignment || assignment.inventory_item_id !== request.fromInventoryItemId) {
-        throwConflict('Upgrade offer must reference current assignment', 'UPGRADE_INVALID_FROM');
-      }
-
-      const offer = await this.upgradesRepository.create(trx, {
+      const offer = await this.upgradesRepository.create(db, {
         visit_id: request.visitId,
         from_inventory_item_id: request.fromInventoryItemId,
         to_inventory_type: request.toInventoryType,
         status: 'PENDING',
-          expires_at: expiresAt,
-          created_at: new Date(),
-        });
-
-        await this.auditService.write(
-          {
-            action: 'UPGRADE_OFFERED',
-            entityType: 'upgrade_offer',
-            entityId: offer.id,
-            actorStaffId: actor.staffId,
-            actorDeviceId: actor.deviceId,
-            metadata: {
-              visitId: offer.visit_id,
-              toInventoryType: offer.to_inventory_type,
-            },
-          },
-          trx
-        );
-
-        return offer;
+        expires_at: expiresAt,
+        created_at: new Date(),
       });
 
-      return this.toDto(created);
+      await this.auditService.write(
+        {
+          action: 'UPGRADE_OFFERED',
+          entityType: 'upgrade_offer',
+          entityId: offer.id,
+          actorStaffId: actor.staffId,
+          actorDeviceId: actor.deviceId,
+          metadata: {
+            visitId: offer.visit_id,
+            toInventoryType: offer.to_inventory_type,
+          },
+        },
+        db
+      );
+
+      return offer;
     } catch (error) {
       if (isUniqueViolation(error)) {
         throwConflict('Upgrade offer already exists', 'UPGRADE_ALREADY_DECIDED');
@@ -88,178 +65,107 @@ export class UpgradesService {
     }
   }
 
-  async accept(
+  async findByIdForUpdate(db: Kysely<Database>, offerId: string) {
+    return this.upgradesRepository.findByIdForUpdate(db, offerId);
+  }
+
+  async ensurePending(
+    db: Kysely<Database>,
+    offer: Selectable<Database['upgrade_offers']>,
+    actor: { staffId: string; deviceId: string }
+  ): Promise<void> {
+    if (offer.status === 'EXPIRED') {
+      throwConflict('Upgrade offer expired', 'UPGRADE_EXPIRED');
+    }
+    if (offer.status !== 'PENDING') {
+      throwConflict('Upgrade offer already decided', 'UPGRADE_ALREADY_DECIDED');
+    }
+    if (offer.expires_at.getTime() <= Date.now()) {
+      await this.markExpired(db, offer, actor);
+      throwConflict('Upgrade offer expired', 'UPGRADE_EXPIRED');
+    }
+  }
+
+  async markAccepted(
+    db: Kysely<Database>,
     offerId: string,
     actor: { staffId: string; deviceId: string }
-  ): Promise<UpgradeOfferDto> {
-    const updated = await this.databaseService.transaction(async (trx) => {
-      const offer = await this.upgradesRepository.findById(trx, offerId);
-      if (!offer) {
-        throwNotFound('Upgrade offer not found', 'UPGRADE_NOT_FOUND');
-      }
-      if (offer.status === 'EXPIRED') {
-        throwConflict('Upgrade offer expired', 'UPGRADE_EXPIRED');
-      }
-      if (offer.status !== 'PENDING') {
-        throwConflict('Upgrade offer already decided', 'UPGRADE_ALREADY_DECIDED');
-      }
-      if (offer.expires_at.getTime() <= Date.now()) {
-        const expired = await this.upgradesRepository.update(trx, offer.id, {
-          status: 'EXPIRED',
-        });
+  ): Promise<Selectable<Database['upgrade_offers']>> {
+    const next = await this.upgradesRepository.update(db, offerId, { status: 'ACCEPTED' });
+    if (!next) {
+      throwNotFound('Upgrade offer not found', 'UPGRADE_NOT_FOUND');
+    }
 
-        if (expired) {
-          await this.auditService.write(
-            {
-              action: 'UPGRADE_EXPIRED',
-              entityType: 'upgrade_offer',
-              entityId: offer.id,
-              actorStaffId: actor.staffId,
-              actorDeviceId: actor.deviceId,
-              metadata: {
-                visitId: offer.visit_id,
-              },
-            },
-            trx
-          );
-        }
+    await this.auditService.write(
+      {
+        action: 'UPGRADE_ACCEPTED',
+        entityType: 'upgrade_offer',
+        entityId: offerId,
+        actorStaffId: actor.staffId,
+        actorDeviceId: actor.deviceId,
+        metadata: {
+          visitId: next.visit_id,
+        },
+      },
+      db
+    );
 
-        throwConflict('Upgrade offer expired', 'UPGRADE_EXPIRED');
-      }
+    return next;
+  }
 
-      const currentAssignment = await this.assignmentsService.findActiveByVisit(trx, offer.visit_id);
-      if (!currentAssignment || currentAssignment.inventory_item_id !== offer.from_inventory_item_id) {
-        throwConflict('Upgrade offer no longer matches current assignment', 'UPGRADE_INVALID_FROM');
-      }
+  async markDeclined(
+    db: Kysely<Database>,
+    offerId: string,
+    actor: { staffId: string; deviceId: string }
+  ): Promise<Selectable<Database['upgrade_offers']>> {
+    const next = await this.upgradesRepository.update(db, offerId, { status: 'DECLINED' });
+    if (!next) {
+      throwNotFound('Upgrade offer not found', 'UPGRADE_NOT_FOUND');
+    }
 
-      const targetItem = await this.inventoryService.findAvailableByTypeForUpdate(
-        trx,
-        offer.to_inventory_type
-      );
-      if (!targetItem) {
-        throwConflict('No available inventory for upgrade', 'HOLD_CONFLICT');
-      }
+    await this.auditService.write(
+      {
+        action: 'UPGRADE_DECLINED',
+        entityType: 'upgrade_offer',
+        entityId: offerId,
+        actorStaffId: actor.staffId,
+        actorDeviceId: actor.deviceId,
+        metadata: {
+          visitId: next.visit_id,
+        },
+      },
+      db
+    );
 
-      await this.holdsService.createInTransaction(
-        trx,
-        {
-          inventoryItemId: targetItem.id,
+    return next;
+  }
+
+  async markExpired(
+    db: Kysely<Database>,
+    offer: Selectable<Database['upgrade_offers']>,
+    actor: { staffId: string; deviceId: string }
+  ): Promise<void> {
+    const updated = await this.upgradesRepository.update(db, offer.id, { status: 'EXPIRED' });
+    if (!updated) {
+      throwNotFound('Upgrade offer not found', 'UPGRADE_NOT_FOUND');
+    }
+
+    await this.auditService.write(
+      {
+        action: 'UPGRADE_EXPIRED',
+        entityType: 'upgrade_offer',
+        entityId: offer.id,
+        actorStaffId: actor.staffId,
+        actorDeviceId: actor.deviceId,
+        metadata: {
           visitId: offer.visit_id,
-          expiresAt: offer.expires_at.toISOString(),
         },
-        actor
-      );
-
-      await this.inventoryService.transitionStatus(trx, currentAssignment.inventory_item_id, 'DIRTY', {
-        actorStaffId: actor.staffId,
-        actorDeviceId: actor.deviceId,
-        allowAny: true,
-        source: 'UPGRADE_ACCEPT',
-        note: 'Released on upgrade',
-      });
-
-      await this.inventoryService.transitionStatus(trx, targetItem.id, 'OCCUPIED', {
-        actorStaffId: actor.staffId,
-        actorDeviceId: actor.deviceId,
-        allowAny: true,
-        source: 'UPGRADE_ACCEPT',
-      });
-
-      const reassigned = await this.assignmentsService.reassign(trx, offer.visit_id, targetItem.id);
-      if (!reassigned) {
-        throwConflict('Visit assignment not found', 'HOLD_CONFLICT');
-      }
-
-      const next = await this.upgradesRepository.update(trx, offer.id, {
-        status: 'ACCEPTED',
-      });
-
-      await this.holdsService.releaseActiveHoldForInventoryItem(trx, targetItem.id, actor);
-
-      await this.auditService.write(
-        {
-          action: 'UPGRADE_ACCEPTED',
-          entityType: 'upgrade_offer',
-          entityId: offer.id,
-          actorStaffId: actor.staffId,
-          actorDeviceId: actor.deviceId,
-          metadata: {
-            visitId: offer.visit_id,
-          },
-        },
-        trx
-      );
-
-      return next!;
-    });
-
-    return this.toDto(updated);
+      },
+      db
+    );
   }
 
-  async decline(
-    offerId: string,
-    actor: { staffId: string; deviceId: string }
-  ): Promise<UpgradeOfferDto> {
-    const updated = await this.databaseService.transaction(async (trx) => {
-      const offer = await this.upgradesRepository.findById(trx, offerId);
-      if (!offer) {
-        throwNotFound('Upgrade offer not found', 'UPGRADE_NOT_FOUND');
-      }
-      if (offer.status === 'EXPIRED') {
-        throwConflict('Upgrade offer expired', 'UPGRADE_EXPIRED');
-      }
-      if (offer.status !== 'PENDING') {
-        throwConflict('Upgrade offer already decided', 'UPGRADE_ALREADY_DECIDED');
-      }
-      if (offer.expires_at.getTime() <= Date.now()) {
-        const expired = await this.upgradesRepository.update(trx, offer.id, {
-          status: 'EXPIRED',
-        });
-
-        if (expired) {
-          await this.auditService.write(
-            {
-              action: 'UPGRADE_EXPIRED',
-              entityType: 'upgrade_offer',
-              entityId: offer.id,
-              actorStaffId: actor.staffId,
-              actorDeviceId: actor.deviceId,
-              metadata: {
-                visitId: offer.visit_id,
-              },
-            },
-            trx
-          );
-        }
-
-        throwConflict('Upgrade offer expired', 'UPGRADE_EXPIRED');
-      }
-
-      const next = await this.upgradesRepository.update(trx, offer.id, {
-        status: 'DECLINED',
-      });
-
-      await this.auditService.write(
-        {
-          action: 'UPGRADE_DECLINED',
-          entityType: 'upgrade_offer',
-          entityId: offer.id,
-          actorStaffId: actor.staffId,
-          actorDeviceId: actor.deviceId,
-          metadata: {
-            visitId: offer.visit_id,
-          },
-        },
-        trx
-      );
-
-      return next!;
-    });
-
-    return this.toDto(updated);
-  }
-
-  private toDto(row: Selectable<Database['upgrade_offers']>): UpgradeOfferDto {
+  toDto(row: Selectable<Database['upgrade_offers']>): UpgradeOfferDto {
     return {
       id: row.id,
       visitId: row.visit_id,

@@ -12,6 +12,18 @@ export class UpgradesRepository {
     return db.selectFrom('upgrade_offers').selectAll().where('id', '=', id).executeTakeFirst();
   }
 
+  async findByIdForUpdate(
+    db: Kysely<Database>,
+    id: string
+  ): Promise<Selectable<Database['upgrade_offers']> | undefined> {
+    return db
+      .selectFrom('upgrade_offers')
+      .selectAll()
+      .where('id', '=', id)
+      .forUpdate()
+      .executeTakeFirst();
+  }
+
   async update(db: Kysely<Database>, id: string, values: Updateable<Database['upgrade_offers']>) {
     return db.updateTable('upgrade_offers').set(values).where('id', '=', id).returningAll().executeTakeFirst();
   }

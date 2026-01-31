@@ -1,10 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../../platform/database/database.service';
 import { AuditService } from '../audit/audit.service';
-import { AssignmentsService } from '../assignments/assignments.service';
-import { InventoryService } from '../inventory/inventory.service';
-import { VisitsReadService } from '../visits/visits.read.service';
-import { WaitlistReadService } from '../waitlist/waitlist.read.service';
 import { HoldsRepository } from './holds.repository';
 import type { CreateHoldRequestDto } from './dto/hold-requests.dto';
 import type { HoldDto } from './dto/hold.dto';
@@ -18,10 +14,6 @@ export class HoldsService {
   constructor(
     private readonly databaseService: DatabaseService,
     private readonly holdsRepository: HoldsRepository,
-    private readonly inventoryService: InventoryService,
-    private readonly assignmentsService: AssignmentsService,
-    private readonly visitsReadService: VisitsReadService,
-    private readonly waitlistReadService: WaitlistReadService,
     private readonly auditService: AuditService
   ) {}
 
@@ -60,41 +52,7 @@ export class HoldsService {
       throwValidation('exactly one of visitId or waitlistEntryId is required');
     }
 
-    if (request.visitId) {
-      const visit = await this.visitsReadService.findById(request.visitId, trx);
-      if (!visit) {
-        throwNotFound('Visit not found', 'VISIT_NOT_FOUND');
-      }
-      if (visit.status !== 'ACTIVE') {
-        throwConflict('Visit is not active', 'HOLD_CONFLICT');
-      }
-    }
-
-    if (request.waitlistEntryId) {
-      const entry = await this.waitlistReadService.findById(request.waitlistEntryId, trx);
-      if (!entry) {
-        throwNotFound('Waitlist entry not found', 'WAITLIST_NOT_FOUND');
-      }
-      if (entry.status !== 'OPEN') {
-        throwConflict('Waitlist entry is not open', 'HOLD_CONFLICT');
-      }
-    }
-
     try {
-      const item = await this.inventoryService.findByIdForUpdate(trx, request.inventoryItemId);
-      if (!item) {
-        throwNotFound('Inventory item not found', 'INVENTORY_NOT_FOUND');
-      }
-      if (item.status !== 'AVAILABLE') {
-        throwConflict('Inventory item is not available', 'HOLD_CONFLICT');
-      }
-      const activeAssignment = await this.assignmentsService.findActiveByInventoryItem(
-        trx,
-        request.inventoryItemId
-      );
-      if (activeAssignment) {
-        throwConflict('Inventory item is already assigned', 'HOLD_CONFLICT');
-      }
       let activeHold = await this.holdsRepository.findActiveByInventoryItem(trx, request.inventoryItemId);
       if (activeHold && activeHold.expires_at <= new Date()) {
         await this.holdsRepository.update(trx, activeHold.id, { status: 'EXPIRED' });
@@ -218,7 +176,7 @@ export class HoldsService {
     return this.toDto(updated);
   }
 
-  private toDto(row: Selectable<Database['inventory_holds']>): HoldDto {
+  toDto(row: Selectable<Database['inventory_holds']>): HoldDto {
     return {
       id: row.id,
       inventoryItemId: row.inventory_item_id,

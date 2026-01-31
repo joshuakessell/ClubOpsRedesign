@@ -12,6 +12,8 @@ Canonical layout map for the monorepo.
 - services/
   - api/ (NestJS backend)
 - docs/ (phase docs + runbooks)
+  - database/ (database source of truth + entity details)
+- db/ (schema snapshot)
 - scripts/ (drift checks and tooling scripts)
 - openapi.yaml (HTTP contract source of truth)
 - turbo.json (turborepo pipeline)

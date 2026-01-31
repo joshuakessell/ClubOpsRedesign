@@ -1,7 +1,7 @@
 import { Body, Controller, HttpCode, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { DeviceAuthGuard } from '../../platform/auth-device/device-auth.guard';
 import { StaffAuthGuard } from '../auth-staff/guards/staff-auth.guard';
-import { CheckoutService } from './checkout.service';
+import { CheckoutOrchestratorService } from '../../application/orchestration/checkout-orchestrator.service';
 import type { CheckoutRequestDto } from './dto/checkout-requests.dto';
 import type { CheckoutEventDto } from './dto/checkout.dto';
 import type { Request } from 'express';
@@ -10,7 +10,7 @@ import { throwUnauthorized } from '../../platform/http/errors';
 
 @Controller('v1/checkout')
 export class CheckoutController {
-  constructor(private readonly checkoutService: CheckoutService) {}
+  constructor(private readonly checkoutOrchestrator: CheckoutOrchestratorService) {}
 
   @Post(':visitId/request')
   @UseGuards(DeviceAuthGuard, StaffAuthGuard)
@@ -22,7 +22,7 @@ export class CheckoutController {
     if (!req.staffSession || !req.device) {
       throwUnauthorized('Staff session or device context missing', 'STAFF_UNAUTHORIZED');
     }
-    return this.checkoutService.request(visitId, body, {
+    return this.checkoutOrchestrator.request(visitId, body, {
       staffId: req.staffSession.staffId,
       deviceId: req.device.id,
     });
@@ -38,7 +38,7 @@ export class CheckoutController {
     if (!req.staffSession || !req.device) {
       throwUnauthorized('Staff session or device context missing', 'STAFF_UNAUTHORIZED');
     }
-    return this.checkoutService.complete(visitId, {
+    return this.checkoutOrchestrator.complete(visitId, {
       staffId: req.staffSession.staffId,
       deviceId: req.device.id,
     });

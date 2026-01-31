@@ -1,7 +1,7 @@
 import { Body, Controller, HttpCode, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { DeviceAuthGuard } from '../../platform/auth-device/device-auth.guard';
 import { StaffAuthGuard } from '../auth-staff/guards/staff-auth.guard';
-import { HoldsService } from './holds.service';
+import { HoldsOrchestratorService } from '../../application/orchestration/holds-orchestrator.service';
 import type { CreateHoldRequestDto } from './dto/hold-requests.dto';
 import type { HoldDto } from './dto/hold.dto';
 import type { Request } from 'express';
@@ -10,7 +10,7 @@ import { throwUnauthorized } from '../../platform/http/errors';
 
 @Controller('v1/holds')
 export class HoldsController {
-  constructor(private readonly holdsService: HoldsService) {}
+  constructor(private readonly holdsOrchestrator: HoldsOrchestratorService) {}
 
   @Post()
   @UseGuards(DeviceAuthGuard, StaffAuthGuard)
@@ -18,7 +18,7 @@ export class HoldsController {
     if (!req.staffSession || !req.device) {
       throwUnauthorized('Staff session or device context missing', 'STAFF_UNAUTHORIZED');
     }
-    return this.holdsService.create(body, {
+    return this.holdsOrchestrator.create(body, {
       staffId: req.staffSession.staffId,
       deviceId: req.device.id,
     });
@@ -31,7 +31,7 @@ export class HoldsController {
     if (!req.staffSession || !req.device) {
       throwUnauthorized('Staff session or device context missing', 'STAFF_UNAUTHORIZED');
     }
-    return this.holdsService.release(id, {
+    return this.holdsOrchestrator.release(id, {
       staffId: req.staffSession.staffId,
       deviceId: req.device.id,
     });
