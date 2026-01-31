@@ -6,10 +6,10 @@ import request from 'supertest';
 import type { INestApplication } from '@nestjs/common';
 import { hashSecretWithSalt, hashTokenDeterministic } from '../../platform/security/hash';
 
-const migrationPath = path.resolve(
-  __dirname,
-  '../../../migrations/0001_phase1_staff_devices_register_sessions.sql'
-);
+const migrationPaths = [
+  path.resolve(__dirname, '../../../migrations/0001_phase1_staff_devices_register_sessions.sql'),
+  path.resolve(__dirname, '../../../migrations/0002_phase2_inventory_keys_cleaning.sql'),
+];
 
 function requireTestDb(): {
   host: string;
@@ -44,12 +44,19 @@ let migrated = false;
 
 export async function migrateTestDatabase(): Promise<void> {
   if (migrated) return;
-  const sql = fs.readFileSync(migrationPath, 'utf8');
   await withClient(async (client) => {
     await client.query('SELECT pg_advisory_lock(987654321)');
     try {
-      const exists = await client.query("SELECT to_regclass('public.staff') AS table_name");
-      if (!exists.rows[0]?.table_name) {
+      const staffExists = await client.query("SELECT to_regclass('public.staff') AS table_name");
+      if (!staffExists.rows[0]?.table_name) {
+        const sql = fs.readFileSync(migrationPaths[0], 'utf8');
+        await client.query(sql);
+      }
+      const inventoryExists = await client.query(
+        "SELECT to_regclass('public.inventory_items') AS table_name"
+      );
+      if (!inventoryExists.rows[0]?.table_name) {
+        const sql = fs.readFileSync(migrationPaths[1], 'utf8');
         await client.query(sql);
       }
       migrated = true;
@@ -62,7 +69,7 @@ export async function migrateTestDatabase(): Promise<void> {
 export async function truncateAll(): Promise<void> {
   await withClient((client) =>
     client.query(
-      'TRUNCATE TABLE audit_log, staff_sessions, register_sessions, devices, staff RESTART IDENTITY'
+      'TRUNCATE TABLE cleaning_batch_items, cleaning_batches, key_tags, inventory_items, audit_log, staff_sessions, register_sessions, devices, staff RESTART IDENTITY'
     )
   );
 }
@@ -81,6 +88,21 @@ export type SeedDeviceInput = {
   name: string;
   kind: 'register' | 'kiosk' | 'office';
   token: string;
+  enabled?: boolean;
+};
+
+export type SeedInventoryItemInput = {
+  id?: string;
+  type: 'room' | 'locker';
+  name: string;
+  status?: 'AVAILABLE' | 'OCCUPIED' | 'DIRTY' | 'CLEANING' | 'OUT_OF_SERVICE';
+  notes?: string | null;
+};
+
+export type SeedKeyTagInput = {
+  id?: string;
+  tagCode: string;
+  assignedToItemId?: string | null;
   enabled?: boolean;
 };
 
@@ -105,6 +127,32 @@ export async function seedDevice(input: SeedDeviceInput): Promise<SeedDeviceInpu
     client.query(
       'INSERT INTO devices (id, name, kind, enabled, device_token_hash, last_seen_at) VALUES ($1,$2,$3,$4,$5,$6)',
       [id, input.name, input.kind, enabled, tokenHash, null]
+    )
+  );
+  return { ...input, id, enabled };
+}
+
+export async function seedInventoryItem(
+  input: SeedInventoryItemInput
+): Promise<SeedInventoryItemInput & { id: string }> {
+  const id = input.id ?? randomUUID();
+  const status = input.status ?? 'AVAILABLE';
+  await withClient((client) =>
+    client.query(
+      'INSERT INTO inventory_items (id, type, name, status, notes) VALUES ($1,$2,$3,$4,$5)',
+      [id, input.type, input.name, status, input.notes ?? null]
+    )
+  );
+  return { ...input, id, status };
+}
+
+export async function seedKeyTag(input: SeedKeyTagInput): Promise<SeedKeyTagInput & { id: string }> {
+  const id = input.id ?? randomUUID();
+  const enabled = input.enabled ?? true;
+  await withClient((client) =>
+    client.query(
+      'INSERT INTO key_tags (id, tag_code, assigned_to_item_id, enabled) VALUES ($1,$2,$3,$4)',
+      [id, input.tagCode, input.assignedToItemId ?? null, enabled]
     )
   );
   return { ...input, id, enabled };
@@ -151,6 +199,21 @@ export async function fetchRegisterSession(sessionId: string) {
       signed_out_at: Date | null;
       signed_out_reason: string | null;
       last_heartbeat_at: Date;
+    } | undefined;
+  });
+}
+
+export async function fetchInventoryItem(itemId: string) {
+  return withClient(async (client) => {
+    const result = await client.query(
+      'SELECT id, status, notes, updated_at FROM inventory_items WHERE id=$1',
+      [itemId]
+    );
+    return result.rows[0] as {
+      id: string;
+      status: string;
+      notes: string | null;
+      updated_at: Date;
     } | undefined;
   });
 }

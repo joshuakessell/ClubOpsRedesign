@@ -13,7 +13,12 @@ export type ErrorCode =
   | 'REGISTER_SESSION_NOT_FOUND'
   | 'REGISTER_SESSION_NOT_ACTIVE'
   | 'REGISTER_ACTIVE_CONFLICT'
-  | 'DEVICE_ACTIVE_CONFLICT';
+  | 'DEVICE_ACTIVE_CONFLICT'
+  | 'INVENTORY_NOT_FOUND'
+  | 'INVALID_STATUS_TRANSITION'
+  | 'KEY_TAG_NOT_FOUND'
+  | 'KEY_TAG_DISABLED'
+  | 'KEY_TAG_ASSIGNMENT_CONFLICT';
 
 export function errorResponse(error: string, message: string, code?: ErrorCode) {
   return { error, message, code };

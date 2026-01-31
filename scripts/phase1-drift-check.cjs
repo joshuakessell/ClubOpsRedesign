@@ -10,8 +10,8 @@ const openapiPath = path.join(root, 'openapi.yaml');
 const forbiddenSegments = new Set([
   'payments',
   'pricing',
-  'inventory',
   'visits',
+  'waitlist',
   'timeclock',
   'shifts',
   'telemetry',

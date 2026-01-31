@@ -1,11 +1,12 @@
 openapi: 3.0.3
 info:
-  title: ClubOps Phase 1 API
+  title: ClubOps Phase 2 API
   version: 0.1.0
   license:
     name: UNLICENSED
   description: |
     Phase 1 scope: staff PIN auth, device allowlist, register sessions (lifecycle + heartbeat + TTL), admin force sign-out, audit writes.
+    Phase 2 adds: inventory items, key tags, and cleaning batches.
 
     Device authentication is required via headers for all non-health endpoints:
     - x-device-id
@@ -30,6 +31,12 @@ tags:
     description: Device identity and allowlist validation.
   - name: registers
     description: Register availability and session lifecycle.
+  - name: inventory
+    description: Inventory items and status transitions.
+  - name: keys
+    description: Key tag scanning and assignment.
+  - name: cleaning
+    description: Cleaning batch transitions.
   - name: admin
     description: Admin-only device, register session, and audit endpoints.
 
@@ -406,6 +413,242 @@ paths:
         '403':
           $ref: '#/components/responses/ErrorResponse'
 
+  /inventory/items:
+    get:
+      tags: [inventory]
+      summary: List inventory items
+      operationId: inventoryList
+      security:
+        - DeviceIdHeader: []
+          DeviceTokenHeader: []
+          StaffBearerAuth: []
+      parameters:
+        - name: type
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/InventoryItemType'
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/InventoryStatus'
+      responses:
+        '200':
+          description: Inventory items
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryListResponse'
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /inventory/items/{id}:
+    get:
+      tags: [inventory]
+      summary: Get an inventory item
+      operationId: inventoryGet
+      security:
+        - DeviceIdHeader: []
+          DeviceTokenHeader: []
+          StaffBearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Inventory item
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryItemDTO'
+        '401':
+          $ref: '#/components/responses/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/ErrorResponse'
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /inventory/items/{id}/status:
+    patch:
+      tags: [inventory]
+      summary: Update inventory item status
+      operationId: inventoryUpdateStatus
+      security:
+        - DeviceIdHeader: []
+          DeviceTokenHeader: []
+          StaffBearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateInventoryStatusRequest'
+      responses:
+        '200':
+          description: Inventory item updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryItemDTO'
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/ErrorResponse'
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+        '409':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /keys/scan:
+    post:
+      tags: [keys]
+      summary: Scan a key tag
+      operationId: keysScan
+      security:
+        - DeviceIdHeader: []
+          DeviceTokenHeader: []
+          StaffBearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KeyScanRequest'
+      responses:
+        '200':
+          description: Key scan result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KeyScanResponse'
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/ErrorResponse'
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /cleaning/batch:
+    post:
+      tags: [cleaning]
+      summary: Create a cleaning batch and transition statuses
+      description: If tagCodes are provided, itemIds are ignored.
+      operationId: cleaningBatchCreate
+      security:
+        - DeviceIdHeader: []
+          DeviceTokenHeader: []
+          StaffBearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CleaningBatchRequest'
+      responses:
+        '200':
+          description: Cleaning batch result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CleaningBatchResponse'
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /admin/inventory/items:
+    post:
+      tags: [admin]
+      summary: Create inventory item
+      operationId: adminInventoryCreate
+      description: Admin only.
+      security:
+        - DeviceIdHeader: []
+          DeviceTokenHeader: []
+          StaffBearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateInventoryItemRequest'
+      responses:
+        '201':
+          description: Inventory item created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryItemDTO'
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /admin/key-tags/{id}:
+    patch:
+      tags: [admin]
+      summary: Update key tag assignment or enablement
+      operationId: adminKeyTagsUpdate
+      description: Admin only.
+      security:
+        - DeviceIdHeader: []
+          DeviceTokenHeader: []
+          StaffBearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateKeyTagRequest'
+      responses:
+        '200':
+          description: Key tag updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KeyTagDTO'
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/ErrorResponse'
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+        '409':
+          $ref: '#/components/responses/ErrorResponse'
+
   /admin/register-sessions:
     get:
       tags: [admin]
@@ -579,6 +822,11 @@ components:
             - REGISTER_SESSION_NOT_ACTIVE
             - REGISTER_ACTIVE_CONFLICT
             - DEVICE_ACTIVE_CONFLICT
+            - INVENTORY_NOT_FOUND
+            - INVALID_STATUS_TRANSITION
+            - KEY_TAG_NOT_FOUND
+            - KEY_TAG_DISABLED
+            - KEY_TAG_ASSIGNMENT_CONFLICT
 
     HealthResponse:
       type: object
@@ -599,6 +847,14 @@ components:
       type: string
       enum: [register, kiosk, office]
 
+    InventoryItemType:
+      type: string
+      enum: [room, locker]
+
+    InventoryStatus:
+      type: string
+      enum: [AVAILABLE, OCCUPIED, DIRTY, CLEANING, OUT_OF_SERVICE]
+
     DeviceDTO:
       type: object
       required: [id, name, kind, enabled, lastSeenAt]
@@ -616,6 +872,150 @@ components:
           type: string
           format: date-time
           nullable: true
+
+    InventoryItemDTO:
+      type: object
+      required: [id, type, name, status, notes, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          $ref: '#/components/schemas/InventoryItemType'
+        name:
+          type: string
+        status:
+          $ref: '#/components/schemas/InventoryStatus'
+        notes:
+          type: string
+          nullable: true
+        updatedAt:
+          type: string
+          format: date-time
+
+    InventoryListResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/InventoryItemDTO'
+
+    UpdateInventoryStatusRequest:
+      type: object
+      required: [toStatus]
+      properties:
+        toStatus:
+          $ref: '#/components/schemas/InventoryStatus'
+        note:
+          type: string
+          nullable: true
+
+    CreateInventoryItemRequest:
+      type: object
+      required: [type, name]
+      properties:
+        type:
+          $ref: '#/components/schemas/InventoryItemType'
+        name:
+          type: string
+        status:
+          $ref: '#/components/schemas/InventoryStatus'
+        notes:
+          type: string
+          nullable: true
+
+    KeyTagDTO:
+      type: object
+      required: [id, tagCode, assignedToItemId, enabled]
+      properties:
+        id:
+          type: string
+          format: uuid
+        tagCode:
+          type: string
+        assignedToItemId:
+          type: string
+          format: uuid
+          nullable: true
+        enabled:
+          type: boolean
+
+    KeyScanRequest:
+      type: object
+      required: [tagCode]
+      properties:
+        tagCode:
+          type: string
+
+    KeyScanResponse:
+      type: object
+      required: [keyTag, item]
+      properties:
+        keyTag:
+          $ref: '#/components/schemas/KeyTagDTO'
+        item:
+          $ref: '#/components/schemas/InventoryItemDTO'
+          nullable: true
+
+    UpdateKeyTagRequest:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+        assignedToItemId:
+          type: string
+          format: uuid
+          nullable: true
+
+    CleaningTargetStatus:
+      type: string
+      enum: [CLEANING, AVAILABLE]
+
+    CleaningBatchRequest:
+      type: object
+      required: [toStatus]
+      properties:
+        itemIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        tagCodes:
+          type: array
+          items:
+            type: string
+        toStatus:
+          $ref: '#/components/schemas/CleaningTargetStatus'
+
+    CleaningBatchResult:
+      type: object
+      required: [itemId, status]
+      properties:
+        itemId:
+          type: string
+          format: uuid
+          nullable: true
+        tagCode:
+          type: string
+        status:
+          type: string
+          enum: [UPDATED, SKIPPED, FAILED]
+        message:
+          type: string
+
+    CleaningBatchResponse:
+      type: object
+      required: [batchId, results]
+      properties:
+        batchId:
+          type: string
+          format: uuid
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/CleaningBatchResult'
 
     DeviceListResponse:
       type: object

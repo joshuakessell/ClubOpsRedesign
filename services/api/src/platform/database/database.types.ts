@@ -53,10 +53,46 @@ export interface AuditLogTable {
   created_at: Date;
 }
 
+export interface InventoryItemsTable {
+  id: Generated<string>;
+  type: 'room' | 'locker';
+  name: string;
+  status: 'AVAILABLE' | 'OCCUPIED' | 'DIRTY' | 'CLEANING' | 'OUT_OF_SERVICE';
+  notes: string | null;
+  updated_at: Date;
+  created_at: Date;
+}
+
+export interface KeyTagsTable {
+  id: Generated<string>;
+  tag_code: string;
+  assigned_to_item_id: string | null;
+  enabled: boolean;
+  created_at: Date;
+}
+
+export interface CleaningBatchesTable {
+  id: Generated<string>;
+  created_by_staff_id: string | null;
+  created_at: Date;
+}
+
+export interface CleaningBatchItemsTable {
+  batch_id: string;
+  inventory_item_id: string;
+  from_status: 'AVAILABLE' | 'OCCUPIED' | 'DIRTY' | 'CLEANING' | 'OUT_OF_SERVICE';
+  to_status: 'AVAILABLE' | 'OCCUPIED' | 'DIRTY' | 'CLEANING' | 'OUT_OF_SERVICE';
+  created_at: Date;
+}
+
 export interface Database {
   staff: StaffTable;
   devices: DevicesTable;
   staff_sessions: StaffSessionsTable;
   register_sessions: RegisterSessionsTable;
   audit_log: AuditLogTable;
+  inventory_items: InventoryItemsTable;
+  key_tags: KeyTagsTable;
+  cleaning_batches: CleaningBatchesTable;
+  cleaning_batch_items: CleaningBatchItemsTable;
 }

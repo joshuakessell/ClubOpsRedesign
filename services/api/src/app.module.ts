@@ -10,6 +10,9 @@ import { AuthStaffModule } from './domains/auth-staff/auth-staff.module';
 import { DevicesModule } from './domains/devices/devices.module';
 import { RegisterSessionsModule } from './domains/register-sessions/register-sessions.module';
 import { AuditModule } from './domains/audit/audit.module';
+import { InventoryModule } from './domains/inventory/inventory.module';
+import { KeysModule } from './domains/keys/keys.module';
+import { CleaningModule } from './domains/cleaning/cleaning.module';
 import { AdminModule } from './application/admin/admin.module';
 
 @Module({
@@ -25,6 +28,9 @@ import { AdminModule } from './application/admin/admin.module';
     DevicesModule,
     RegisterSessionsModule,
     AuditModule,
+    InventoryModule,
+    KeysModule,
+    CleaningModule,
     AdminModule,
   ],
 })
