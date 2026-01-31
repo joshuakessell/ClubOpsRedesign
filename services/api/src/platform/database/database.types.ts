@@ -85,6 +85,53 @@ export interface CleaningBatchItemsTable {
   created_at: Date;
 }
 
+export interface CustomersTable {
+  id: Generated<string>;
+  first_name: string;
+  last_name: string;
+  display_name: string | null;
+  phone: string | null;
+  email: string | null;
+  created_at: Date;
+}
+
+export interface VisitsTable {
+  id: Generated<string>;
+  customer_id: string;
+  status: 'ACTIVE' | 'CLOSED';
+  started_at: Date;
+  planned_end_at: Date;
+  closed_at: Date | null;
+  initial_duration_minutes: number;
+  max_total_duration_minutes: number;
+  renewal_total_minutes: number;
+  created_by_staff_id: string | null;
+}
+
+export interface VisitRenewalsTable {
+  id: Generated<string>;
+  visit_id: string;
+  duration_minutes: 120 | 360;
+  created_by_staff_id: string | null;
+  created_at: Date;
+}
+
+export interface VisitAssignmentsTable {
+  visit_id: string;
+  inventory_item_id: string;
+  assigned_at: Date;
+  released_at: Date | null;
+}
+
+export interface AgreementsTable {
+  id: Generated<string>;
+  visit_id: string;
+  status: 'SIGNED' | 'BYPASSED';
+  captured_at: Date;
+  method: 'KIOSK' | 'REGISTER' | 'ADMIN';
+  metadata: Record<string, unknown>;
+}
+
 export interface Database {
   staff: StaffTable;
   devices: DevicesTable;
@@ -95,4 +142,9 @@ export interface Database {
   key_tags: KeyTagsTable;
   cleaning_batches: CleaningBatchesTable;
   cleaning_batch_items: CleaningBatchItemsTable;
+  customers: CustomersTable;
+  visits: VisitsTable;
+  visit_renewals: VisitRenewalsTable;
+  visit_assignments: VisitAssignmentsTable;
+  agreements: AgreementsTable;
 }

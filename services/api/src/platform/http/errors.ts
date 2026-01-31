@@ -18,7 +18,13 @@ export type ErrorCode =
   | 'INVALID_STATUS_TRANSITION'
   | 'KEY_TAG_NOT_FOUND'
   | 'KEY_TAG_DISABLED'
-  | 'KEY_TAG_ASSIGNMENT_CONFLICT';
+  | 'KEY_TAG_ASSIGNMENT_CONFLICT'
+  | 'CUSTOMER_NOT_FOUND'
+  | 'VISIT_NOT_FOUND'
+  | 'VISIT_ALREADY_ACTIVE'
+  | 'VISIT_MAX_DURATION_EXCEEDED'
+  | 'INVENTORY_UNAVAILABLE_FOR_ASSIGNMENT'
+  | 'AGREEMENT_ALREADY_CAPTURED';
 
 export function errorResponse(error: string, message: string, code?: ErrorCode) {
   return { error, message, code };

@@ -9,6 +9,7 @@ import { hashSecretWithSalt, hashTokenDeterministic } from '../../platform/secur
 const migrationPaths = [
   path.resolve(__dirname, '../../../migrations/0001_phase1_staff_devices_register_sessions.sql'),
   path.resolve(__dirname, '../../../migrations/0002_phase2_inventory_keys_cleaning.sql'),
+  path.resolve(__dirname, '../../../migrations/0003_phase3_customers_visits_assignments_agreements.sql'),
 ];
 
 function requireTestDb(): {
@@ -59,6 +60,13 @@ export async function migrateTestDatabase(): Promise<void> {
         const sql = fs.readFileSync(migrationPaths[1], 'utf8');
         await client.query(sql);
       }
+      const customersExists = await client.query(
+        "SELECT to_regclass('public.customers') AS table_name"
+      );
+      if (!customersExists.rows[0]?.table_name) {
+        const sql = fs.readFileSync(migrationPaths[2], 'utf8');
+        await client.query(sql);
+      }
       migrated = true;
     } finally {
       await client.query('SELECT pg_advisory_unlock(987654321)');
@@ -69,7 +77,7 @@ export async function migrateTestDatabase(): Promise<void> {
 export async function truncateAll(): Promise<void> {
   await withClient((client) =>
     client.query(
-      'TRUNCATE TABLE cleaning_batch_items, cleaning_batches, key_tags, inventory_items, audit_log, staff_sessions, register_sessions, devices, staff RESTART IDENTITY'
+      'TRUNCATE TABLE agreements, visit_assignments, visit_renewals, visits, customers, cleaning_batch_items, cleaning_batches, key_tags, inventory_items, audit_log, staff_sessions, register_sessions, devices, staff RESTART IDENTITY'
     )
   );
 }
@@ -104,6 +112,15 @@ export type SeedKeyTagInput = {
   tagCode: string;
   assignedToItemId?: string | null;
   enabled?: boolean;
+};
+
+export type SeedCustomerInput = {
+  id?: string;
+  firstName: string;
+  lastName: string;
+  displayName?: string | null;
+  phone?: string | null;
+  email?: string | null;
 };
 
 export async function seedStaff(input: SeedStaffInput): Promise<SeedStaffInput & { id: string }> {
@@ -156,6 +173,26 @@ export async function seedKeyTag(input: SeedKeyTagInput): Promise<SeedKeyTagInpu
     )
   );
   return { ...input, id, enabled };
+}
+
+export async function seedCustomer(
+  input: SeedCustomerInput
+): Promise<SeedCustomerInput & { id: string }> {
+  const id = input.id ?? randomUUID();
+  await withClient((client) =>
+    client.query(
+      'INSERT INTO customers (id, first_name, last_name, display_name, phone, email) VALUES ($1,$2,$3,$4,$5,$6)',
+      [
+        id,
+        input.firstName,
+        input.lastName,
+        input.displayName ?? null,
+        input.phone ?? null,
+        input.email ?? null,
+      ]
+    )
+  );
+  return { ...input, id };
 }
 
 export async function seedAuditRow(params: {
@@ -214,6 +251,21 @@ export async function fetchInventoryItem(itemId: string) {
       status: string;
       notes: string | null;
       updated_at: Date;
+    } | undefined;
+  });
+}
+
+export async function fetchVisitAssignment(visitId: string) {
+  return withClient(async (client) => {
+    const result = await client.query(
+      'SELECT visit_id, inventory_item_id, assigned_at, released_at FROM visit_assignments WHERE visit_id=$1',
+      [visitId]
+    );
+    return result.rows[0] as {
+      visit_id: string;
+      inventory_item_id: string;
+      assigned_at: Date;
+      released_at: Date | null;
     } | undefined;
   });
 }

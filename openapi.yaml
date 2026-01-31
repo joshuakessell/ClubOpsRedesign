@@ -37,6 +37,12 @@ tags:
     description: Key tag scanning and assignment.
   - name: cleaning
     description: Cleaning batch transitions.
+  - name: customers
+    description: Customer identity and lookup.
+  - name: visits
+    description: Visit lifecycle and assignments.
+  - name: agreements
+    description: Visit agreement capture.
   - name: admin
     description: Admin-only device, register session, and audit endpoints.
 
@@ -411,6 +417,278 @@ paths:
         '401':
           $ref: '#/components/responses/ErrorResponse'
         '403':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /customers:
+    get:
+      tags: [customers]
+      summary: Search customers
+      operationId: customersSearch
+      security:
+        - DeviceIdHeader: []
+          DeviceTokenHeader: []
+          StaffBearerAuth: []
+      parameters:
+        - name: query
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Customer search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerListResponse'
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/ErrorResponse'
+
+    post:
+      tags: [customers]
+      summary: Create customer
+      operationId: customersCreate
+      security:
+        - DeviceIdHeader: []
+          DeviceTokenHeader: []
+          StaffBearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCustomerRequest'
+      responses:
+        '201':
+          description: Customer created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerDTO'
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /visits/active:
+    get:
+      tags: [visits]
+      summary: Get active visit for a customer
+      operationId: visitsActive
+      security:
+        - DeviceIdHeader: []
+          DeviceTokenHeader: []
+          StaffBearerAuth: []
+      parameters:
+        - name: customerId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Active visit or null
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VisitNullableResponse'
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/ErrorResponse'
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /visits/open:
+    post:
+      tags: [visits]
+      summary: Open a visit
+      operationId: visitsOpen
+      security:
+        - DeviceIdHeader: []
+          DeviceTokenHeader: []
+          StaffBearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OpenVisitRequest'
+      responses:
+        '201':
+          description: Visit opened
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VisitDTO'
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/ErrorResponse'
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+        '409':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /visits/{id}/renew:
+    post:
+      tags: [visits]
+      summary: Renew a visit
+      operationId: visitsRenew
+      security:
+        - DeviceIdHeader: []
+          DeviceTokenHeader: []
+          StaffBearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RenewVisitRequest'
+      responses:
+        '200':
+          description: Visit renewed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VisitDTO'
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/ErrorResponse'
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+        '409':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /visits/{id}/assign:
+    post:
+      tags: [visits]
+      summary: Assign inventory item to visit
+      operationId: visitsAssign
+      security:
+        - DeviceIdHeader: []
+          DeviceTokenHeader: []
+          StaffBearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignVisitRequest'
+      responses:
+        '200':
+          description: Assignment created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VisitAssignmentDTO'
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/ErrorResponse'
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+        '409':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /visits/{id}/close:
+    post:
+      tags: [visits]
+      summary: Close a visit
+      operationId: visitsClose
+      security:
+        - DeviceIdHeader: []
+          DeviceTokenHeader: []
+          StaffBearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Visit closed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VisitDTO'
+        '401':
+          $ref: '#/components/responses/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/ErrorResponse'
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /agreements/{visitId}/capture:
+    post:
+      tags: [agreements]
+      summary: Capture agreement for a visit
+      operationId: agreementsCapture
+      security:
+        - DeviceIdHeader: []
+          DeviceTokenHeader: []
+          StaffBearerAuth: []
+      parameters:
+        - name: visitId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CaptureAgreementRequest'
+      responses:
+        '200':
+          description: Agreement captured
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgreementDTO'
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/ErrorResponse'
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+        '409':
           $ref: '#/components/responses/ErrorResponse'
 
   /inventory/items:
@@ -827,6 +1105,12 @@ components:
             - KEY_TAG_NOT_FOUND
             - KEY_TAG_DISABLED
             - KEY_TAG_ASSIGNMENT_CONFLICT
+            - CUSTOMER_NOT_FOUND
+            - VISIT_NOT_FOUND
+            - VISIT_ALREADY_ACTIVE
+            - VISIT_MAX_DURATION_EXCEEDED
+            - INVENTORY_UNAVAILABLE_FOR_ASSIGNMENT
+            - AGREEMENT_ALREADY_CAPTURED
 
     HealthResponse:
       type: object
@@ -846,6 +1130,18 @@ components:
     DeviceKind:
       type: string
       enum: [register, kiosk, office]
+
+    VisitStatus:
+      type: string
+      enum: [ACTIVE, CLOSED]
+
+    AgreementStatus:
+      type: string
+      enum: [SIGNED, BYPASSED]
+
+    AgreementMethod:
+      type: string
+      enum: [KIOSK, REGISTER, ADMIN]
 
     InventoryItemType:
       type: string
@@ -872,6 +1168,180 @@ components:
           type: string
           format: date-time
           nullable: true
+
+    CustomerDTO:
+      type: object
+      required: [id, firstName, lastName, displayName, phone, email, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        firstName:
+          type: string
+        lastName:
+          type: string
+        displayName:
+          type: string
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        email:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+    CustomerListResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CustomerDTO'
+
+    CreateCustomerRequest:
+      type: object
+      required: [firstName, lastName]
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        displayName:
+          type: string
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        email:
+          type: string
+          nullable: true
+
+    VisitDTO:
+      type: object
+      required:
+        [
+          id,
+          customerId,
+          status,
+          startedAt,
+          plannedEndAt,
+          closedAt,
+          initialDurationMinutes,
+          maxTotalDurationMinutes,
+          renewalTotalMinutes
+        ]
+      properties:
+        id:
+          type: string
+          format: uuid
+        customerId:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/VisitStatus'
+        startedAt:
+          type: string
+          format: date-time
+        plannedEndAt:
+          type: string
+          format: date-time
+        closedAt:
+          type: string
+          format: date-time
+          nullable: true
+        initialDurationMinutes:
+          type: integer
+        maxTotalDurationMinutes:
+          type: integer
+        renewalTotalMinutes:
+          type: integer
+
+    VisitNullableResponse:
+      type: object
+      required: [visit]
+      properties:
+        visit:
+          $ref: '#/components/schemas/VisitDTO'
+          nullable: true
+
+    OpenVisitRequest:
+      type: object
+      required: [customerId]
+      properties:
+        customerId:
+          type: string
+          format: uuid
+
+    RenewVisitRequest:
+      type: object
+      required: [durationMinutes]
+      properties:
+        durationMinutes:
+          type: integer
+          enum: [120, 360]
+
+    AssignVisitRequest:
+      type: object
+      required: [inventoryItemId]
+      properties:
+        inventoryItemId:
+          type: string
+          format: uuid
+
+    VisitAssignmentDTO:
+      type: object
+      required: [visitId, inventoryItemId, assignedAt, releasedAt]
+      properties:
+        visitId:
+          type: string
+          format: uuid
+        inventoryItemId:
+          type: string
+          format: uuid
+        assignedAt:
+          type: string
+          format: date-time
+        releasedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    AgreementDTO:
+      type: object
+      required: [id, visitId, status, capturedAt, method, metadata]
+      properties:
+        id:
+          type: string
+          format: uuid
+        visitId:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/AgreementStatus'
+        capturedAt:
+          type: string
+          format: date-time
+        method:
+          $ref: '#/components/schemas/AgreementMethod'
+        metadata:
+          type: object
+          additionalProperties: true
+
+    CaptureAgreementRequest:
+      type: object
+      required: [status, method]
+      properties:
+        status:
+          $ref: '#/components/schemas/AgreementStatus'
+        method:
+          $ref: '#/components/schemas/AgreementMethod'
+        metadata:
+          type: object
+          additionalProperties: true
 
     InventoryItemDTO:
       type: object

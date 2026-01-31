@@ -13,6 +13,9 @@ import { AuditModule } from './domains/audit/audit.module';
 import { InventoryModule } from './domains/inventory/inventory.module';
 import { KeysModule } from './domains/keys/keys.module';
 import { CleaningModule } from './domains/cleaning/cleaning.module';
+import { CustomersModule } from './domains/customers/customers.module';
+import { VisitsModule } from './domains/visits/visits.module';
+import { AgreementsModule } from './domains/agreements/agreements.module';
 import { AdminModule } from './application/admin/admin.module';
 
 @Module({
@@ -31,6 +34,9 @@ import { AdminModule } from './application/admin/admin.module';
     InventoryModule,
     KeysModule,
     CleaningModule,
+    CustomersModule,
+    VisitsModule,
+    AgreementsModule,
     AdminModule,
   ],
 })
